@@ -129,7 +129,7 @@ export const WORLDS: World[] = [
     genre: "Supernatural",
     accent: "#E6A85C",
     poster: "/assets/manifest-poster.jpg",
-    trailer: "/assets/manifest-trailer.mp4",
+    trailer: "https://youtu.be/rZz1VsxA_aQ",
     tone: "dry, watchful, deadpan that cracks when scared",
     passTier: "Festival Pass",
     intro:
