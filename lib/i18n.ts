@@ -120,6 +120,18 @@ const en: Dict = {
   saySomething: "say something…",
   holdBarHint: "Hold the bar to speak — release to send",
   noVoiceInput: "Voice input isn't available here — type your line",
+  dashboard: "Player Dashboard",
+  dashboardKicker: "Your festival record",
+  credential: "Credential",
+  manage: "Manage",
+  skills: "Skills",
+  totals: "Lifetime totals",
+  playthroughs: "Playthroughs",
+  worldsPlayed: "Worlds played",
+  noPlaysYet: "No playthroughs yet — step into a world and your record fills in here.",
+  rolesShort: "roles",
+  cluesShort: "clues",
+  resetProgress: "Reset progress",
 };
 
 const es: Dict = {
@@ -239,6 +251,18 @@ const es: Dict = {
   saySomething: "di algo…",
   holdBarHint: "Mantén la barra para hablar — suelta para enviar",
   noVoiceInput: "La entrada de voz no está disponible aquí — escribe tu mensaje",
+  dashboard: "Panel del Jugador",
+  dashboardKicker: "Tu historial del festival",
+  credential: "Credencial",
+  manage: "Gestionar",
+  skills: "Habilidades",
+  totals: "Totales acumulados",
+  playthroughs: "Partidas",
+  worldsPlayed: "Mundos jugados",
+  noPlaysYet: "Aún no hay partidas — entra a un mundo y tu historial aparecerá aquí.",
+  rolesShort: "roles",
+  cluesShort: "pistas",
+  resetProgress: "Reiniciar progreso",
 };
 
 const DICTS: Record<Lang, Dict> = { en, es };

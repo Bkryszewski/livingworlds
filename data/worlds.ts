@@ -14,7 +14,7 @@ export const WORLDS: World[] = [
     genre: "Speculative Thriller",
     accent: "#46C7E6",
     poster: "/assets/perdido-poster.jpg",
-    trailer: "/assets/perdido-trailer.mp4",
+    trailer: "https://youtu.be/93FqQSSqS1U",
     tone: "terse, precise, haunted",
     passTier: "Festival Pass",
     intro:

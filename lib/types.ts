@@ -97,7 +97,8 @@ export type Stage =
   | "assistance"
   | "player"
   | "cut"
-  | "boxoffice";
+  | "boxoffice"
+  | "dashboard";
 
 export interface ChatMessage {
   role: "character" | "user" | "finding" | "system";

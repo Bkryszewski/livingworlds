@@ -4,6 +4,7 @@ import { WORLDS, getWorld } from "@/data/worlds";
 import type { AIConfig, AssistanceLevel, Lang, Stage } from "@/lib/types";
 import { DEFAULT_AI_CONFIG } from "@/lib/types";
 import { t } from "@/lib/i18n";
+import { toEmbedUrl, isVideoFile } from "@/lib/trailer";
 
 import LanguageToggle from "@/components/LanguageToggle";
 import Hero from "@/components/Hero";
@@ -14,6 +15,14 @@ import WorldPlayer from "@/components/WorldPlayer";
 import YourCut from "@/components/YourCut";
 import AIEngine from "@/components/AIEngine";
 import BoxOffice, { passName } from "@/components/BoxOffice";
+import Dashboard from "@/components/Dashboard";
+import {
+  loadProgress,
+  recordPlaythrough,
+  resetProgress,
+  EMPTY_PROGRESS,
+  type PlayerProgress,
+} from "@/lib/progress";
 
 const AI_STORE_KEY = "livingworlds:ai";
 
@@ -54,6 +63,8 @@ export default function Page() {
   // Festival pass (session-only, like the prototype). "guest" by default.
   const [pass, setPass] = useState("guest");
   const [passFrom, setPassFrom] = useState<Stage>("selector");
+  const [progress, setProgress] = useState<PlayerProgress>(EMPTY_PROGRESS);
+  const [dashFrom, setDashFrom] = useState<Stage>("selector");
   const [toast, setToast] = useState("");
 
   function flash(msg: string) {
@@ -76,6 +87,7 @@ export default function Page() {
     } catch {
       /* ignore */
     }
+    setProgress(loadProgress());
   }, []);
 
   function updateAi(cfg: AIConfig) {
@@ -135,6 +147,7 @@ export default function Page() {
     setCut(text);
     setStats(s);
     setCutLoading(false);
+    if (worldId) setProgress((p) => recordPlaythrough(p, worldId, roleId, s));
     setStage("cut");
   }
 
@@ -175,6 +188,7 @@ export default function Page() {
                   else if (stage === "role") setStage("world");
                   else if (stage === "assistance") setStage("role");
                   else if (stage === "boxoffice") setStage(passFrom);
+                  else if (stage === "dashboard") setStage(dashFrom);
                   else if (stage === "selector" || stage === "cut")
                     setStage("hero");
                 }}
@@ -183,6 +197,18 @@ export default function Page() {
                 ← {t(lang, "back")}
               </button>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {stage !== "dashboard" && (
+                  <button
+                    className="lw-aibadge"
+                    onClick={() => {
+                      setDashFrom(stage);
+                      setStage("dashboard");
+                    }}
+                    aria-label={t(lang, "dashboard")}
+                  >
+                    📊
+                  </button>
+                )}
                 <button
                   className={`lw-aibadge ${aiConfig.enabled ? "on" : ""}`}
                   onClick={() => setAiOpen(true)}
@@ -299,6 +325,24 @@ export default function Page() {
             />
           )}
 
+          {stage === "dashboard" && (
+            <Dashboard
+              lang={lang}
+              progress={progress}
+              passLabel={passName(pass)}
+              worlds={WORLDS}
+              onOpenWorld={(id) => openWorld(id)}
+              onBoxOffice={() => {
+                setPassFrom("dashboard");
+                setStage("boxoffice");
+              }}
+              onReset={() => {
+                setProgress(resetProgress());
+                flash(lang === "es" ? "Progreso reiniciado" : "Progress reset");
+              }}
+            />
+          )}
+
           {aiOpen && (
             <div className="lw-modal" onClick={() => setAiOpen(false)}>
               <div
@@ -336,6 +380,9 @@ function WorldDetail({
 }) {
   const world = getWorld(worldId)!;
   const copy = world.copy[lang];
+  const [trailerOpen, setTrailerOpen] = useState(false);
+  const embed = toEmbedUrl(world.trailer);
+  const isFile = isVideoFile(world.trailer);
   return (
     <div className="lw-view">
       <div className="lw-kicker" style={{ color: world.accent }}>
@@ -349,7 +396,16 @@ function WorldDetail({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={world.poster} alt={world.title} />
         <div className="lw-trailer">
-          <span className="lw-trailerbtn">▶ {t(lang, "trailerSoon")}</span>
+          {embed ? (
+            <button
+              className="lw-trailerbtn"
+              onClick={() => setTrailerOpen(true)}
+            >
+              ▶ {t(lang, "watchTrailer")}
+            </button>
+          ) : (
+            <span className="lw-trailerbtn">▶ {t(lang, "trailerSoon")}</span>
+          )}
         </div>
       </div>
 
@@ -363,6 +419,39 @@ function WorldDetail({
       >
         {t(lang, "chooseRole")} →
       </button>
+
+      {trailerOpen && embed && (
+        <div className="lw-modal" onClick={() => setTrailerOpen(false)}>
+          <div className="lw-modalcard" onClick={(e) => e.stopPropagation()}>
+            <div className="lw-aihead">
+              <strong>
+                {world.title} — {t(lang, "trailer")}
+              </strong>
+              <button className="lw-back" onClick={() => setTrailerOpen(false)}>
+                ✕
+              </button>
+            </div>
+            {isFile ? (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <video
+                className="lw-trailerframe"
+                src={embed}
+                controls
+                autoPlay
+                playsInline
+              />
+            ) : (
+              <iframe
+                className="lw-trailerframe"
+                src={embed + (embed.includes("?") ? "&" : "?") + "autoplay=1"}
+                title={`${world.title} trailer`}
+                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
