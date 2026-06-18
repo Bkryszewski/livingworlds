@@ -139,21 +139,65 @@ export interface TurnContext {
   playerName?: string;
 }
 
+/** Studio fallback: post to our own /api/ai route, which uses the server key. */
+async function callServer(
+  kind: "chat" | "cut",
+  ctx: TurnContext,
+  history: Msg[]
+): Promise<string> {
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      worldId: ctx.world.id,
+      roleId: ctx.role.id,
+      assistance: ctx.assistance,
+      lang: ctx.lang,
+      discovered: ctx.discovered,
+      history,
+      mode: ctx.mode,
+      playerName: ctx.playerName,
+      kind,
+    }),
+  });
+  let data: { text?: string; error?: string };
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("AI server returned an unreadable response");
+  }
+  if (!res.ok || data.error) {
+    throw new Error(
+      data.error ||
+        "AI is on but no key is configured — add your own key in the AI engine, or have the studio set one."
+    );
+  }
+  return (data.text || "").trim();
+}
+
 /** One in-character turn. */
 export async function aiTurn(
   ctx: TurnContext,
   history: Msg[]
 ): Promise<string> {
-  const system = buildSystemPrompt({
-    world: ctx.world,
-    role: ctx.role,
-    assistance: ctx.assistance,
-    lang: ctx.lang,
-    discovered: ctx.discovered,
-    mode: ctx.mode,
-    playerName: ctx.playerName,
-  });
-  const reply = await callLLM(ctx.cfg, system, history, 1000);
+  // BYOK first: if the player supplied their own key, call the provider
+  // directly from their browser. Otherwise use the studio's server route
+  // (app/api/ai), powered by the key set in Vercel env vars.
+  if (ctx.cfg.key.trim()) {
+    const system = buildSystemPrompt({
+      world: ctx.world,
+      role: ctx.role,
+      assistance: ctx.assistance,
+      lang: ctx.lang,
+      discovered: ctx.discovered,
+      mode: ctx.mode,
+      playerName: ctx.playerName,
+    });
+    const reply = await callLLM(ctx.cfg, system, history, 1000);
+    if (!reply) throw new Error("empty reply");
+    return reply;
+  }
+  const reply = await callServer("chat", ctx, history);
   if (!reply) throw new Error("empty reply");
   return reply;
 }
@@ -163,14 +207,22 @@ export async function aiCut(
   ctx: TurnContext,
   history: Msg[]
 ): Promise<string> {
-  const system = buildCutPrompt({
-    world: ctx.world,
-    role: ctx.role,
-    assistance: ctx.assistance,
-    lang: ctx.lang,
-    discovered: ctx.discovered,
-  });
-  return callLLM(ctx.cfg, system, history.length ? history : [{ role: "user", content: "(end)" }], 600);
+  if (ctx.cfg.key.trim()) {
+    const system = buildCutPrompt({
+      world: ctx.world,
+      role: ctx.role,
+      assistance: ctx.assistance,
+      lang: ctx.lang,
+      discovered: ctx.discovered,
+    });
+    return callLLM(
+      ctx.cfg,
+      system,
+      history.length ? history : [{ role: "user", content: "(end)" }],
+      600
+    );
+  }
+  return callServer("cut", ctx, history);
 }
 
 /** Quick connection test for the settings panel. */

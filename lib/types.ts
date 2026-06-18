@@ -91,6 +91,7 @@ export interface World {
 export type Stage =
   | "boot"
   | "hero"
+  | "onboard"
   | "selector"
   | "world"
   | "role"

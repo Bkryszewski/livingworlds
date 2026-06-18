@@ -16,6 +16,7 @@ import YourCut from "@/components/YourCut";
 import AIEngine from "@/components/AIEngine";
 import BoxOffice, { passName } from "@/components/BoxOffice";
 import Dashboard from "@/components/Dashboard";
+import Onboard from "@/components/Onboard";
 import {
   loadProgress,
   recordPlaythrough,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/progress";
 
 const AI_STORE_KEY = "livingworlds:ai";
+const PROFILE_KEY = "livingworlds:profile";
 
 const BOOT_STAT = [
   "scanning adjacent realities",
@@ -50,9 +52,14 @@ export default function Page() {
   const [worldId, setWorldId] = useState<string | null>(null);
   const [roleId, setRoleId] = useState<string | null>(null);
   const [assistance, setAssistance] = useState<AssistanceLevel>("Balanced");
-  const [playerName] = useState("");
+  const [profile, setProfile] = useState<{ name: string; email: string }>({
+    name: "",
+    email: "",
+  });
+  const playerName = profile.name;
 
   const [cut, setCut] = useState("");
+  const [cutScript, setCutScript] = useState("");
   const [cutLoading, setCutLoading] = useState(false);
   const [stats, setStats] = useState({ trust: 50, clues: 0, exchanges: 0 });
 
@@ -88,7 +95,22 @@ export default function Page() {
       /* ignore */
     }
     setProgress(loadProgress());
+    try {
+      const p = window.localStorage.getItem(PROFILE_KEY);
+      if (p) setProfile({ name: "", email: "", ...JSON.parse(p) });
+    } catch {
+      /* ignore */
+    }
   }, []);
+
+  function saveProfile(p: { name: string; email: string }) {
+    setProfile(p);
+    try {
+      window.localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+    } catch {
+      /* ignore */
+    }
+  }
 
   function updateAi(cfg: AIConfig) {
     setAiConfig(cfg);
@@ -142,10 +164,12 @@ export default function Page() {
 
   function onCutComplete(
     text: string,
-    s: { trust: number; clues: number; exchanges: number }
+    s: { trust: number; clues: number; exchanges: number },
+    script: string
   ) {
     setCut(text);
     setStats(s);
+    setCutScript(script);
     setCutLoading(false);
     if (worldId) setProgress((p) => recordPlaythrough(p, worldId, roleId, s));
     setStage("cut");
@@ -185,6 +209,7 @@ export default function Page() {
                 className="lw-back"
                 onClick={() => {
                   if (stage === "world") setStage("selector");
+                  else if (stage === "onboard") setStage("hero");
                   else if (stage === "role") setStage("world");
                   else if (stage === "assistance") setStage("role");
                   else if (stage === "boxoffice") setStage(passFrom);
@@ -242,7 +267,20 @@ export default function Page() {
             <Hero
               lang={lang}
               onLang={setLang}
-              onEnter={() => setStage("selector")}
+              onEnter={() =>
+                setStage(profile.name ? "selector" : "onboard")
+              }
+            />
+          )}
+
+          {stage === "onboard" && (
+            <Onboard
+              lang={lang}
+              initial={profile}
+              onDone={(p) => {
+                saveProfile(p);
+                setStage("selector");
+              }}
             />
           )}
 
@@ -306,6 +344,7 @@ export default function Page() {
               lang={lang}
               assistance={assistance}
               cut={cut}
+              script={cutScript}
               loading={cutLoading}
               stats={stats}
               onBoxOffice={() => {

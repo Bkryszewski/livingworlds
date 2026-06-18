@@ -60,13 +60,18 @@ export default function WorldPlayer({
   aiConfig: AIConfig;
   onComplete: (
     cut: string,
-    stats: { trust: number; clues: number; exchanges: number }
+    stats: { trust: number; clues: number; exchanges: number },
+    script: string
   ) => void;
 }) {
   const role = world.roles.find((r) => r.id === roleId) || world.roles[0];
   const script = getScript(world.id);
   const evidence = getEvidence(world.id);
-  const useAI = aiConfig.enabled && aiConfig.key.trim().length > 0;
+  // AI mode engages on the toggle alone. With a player key it runs BYOK
+  // (browser → provider); without one it uses the studio server route. If
+  // neither key exists the first turn returns a clear error instead of
+  // silently dropping back to the scripted choices.
+  const useAI = aiConfig.enabled;
   const pitch = world.id === "perdido" ? 0.8 : 0.95;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -86,6 +91,21 @@ export default function WorldPlayer({
   function clueTitle(id: string): string {
     const c = world.archive.find((x) => x.id === id);
     return c ? c.title : id;
+  }
+  // Serialize the playthrough into a readable scene — the "new script" the
+  // player generated, shown and saved on the Your Cut screen.
+  function buildScript(list: ChatMessage[]): string {
+    const who = (playerName && playerName.trim()) || "YOU";
+    const head = `${world.title.toUpperCase()} — ${role.label.toUpperCase()}\nan interactive playthrough · Legacy Studio Originals\n`;
+    const body = list
+      .filter((m) => m.role === "character" || m.role === "user")
+      .map((m) =>
+        m.role === "character"
+          ? `${world.character.toUpperCase()}\n    ${m.text}`
+          : `${who.toUpperCase()}\n    ${m.text}`
+      )
+      .join("\n\n");
+    return `${head}\n${body}\n\nFADE OUT.`;
   }
   function sayIfVoice(text: string) {
     if (voiceOn && view !== "call") speak(text, pitch);
@@ -142,7 +162,7 @@ export default function WorldPlayer({
         ? CUTS[node.id][lang]
         : "The line went quiet. Whatever happened next, you were the one who heard it first.";
     stopSpeaking();
-    onComplete(coda, { trust: 70, clues: discovered.length, exchanges });
+    onComplete(coda, { trust: 70, clues: discovered.length, exchanges }, buildScript(messages));
   }
 
   // ------------------------- AI MODE ---------------------------
@@ -187,11 +207,12 @@ export default function WorldPlayer({
     stopSpeaking();
     try {
       const cut = await aiCut(aiCtx(), buildHistory(messages));
-      onComplete(cut, { trust: 60, clues: discovered.length, exchanges });
+      onComplete(cut, { trust: 60, clues: discovered.length, exchanges }, buildScript(messages));
     } catch {
       onComplete(
         "The line went quiet. Whatever happened next, you were the one who heard it first.",
-        { trust: 50, clues: discovered.length, exchanges }
+        { trust: 50, clues: discovered.length, exchanges },
+        buildScript(messages)
       );
     } finally {
       setWaiting(false);
