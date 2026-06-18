@@ -393,20 +393,52 @@ function WorldDetail({
       </h1>
 
       <div className="lw-detailposter">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={world.poster} alt={world.title} />
-        <div className="lw-trailer">
-          {embed ? (
+        {embed && trailerOpen ? (
+          <>
+            {isFile ? (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <video
+                className="lw-posterplayer"
+                src={embed}
+                controls
+                autoPlay
+                playsInline
+              />
+            ) : (
+              <iframe
+                className="lw-posterplayer"
+                src={embed + (embed.includes("?") ? "&" : "?") + "autoplay=1"}
+                title={`${world.title} trailer`}
+                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            )}
             <button
-              className="lw-trailerbtn"
-              onClick={() => setTrailerOpen(true)}
+              className="lw-posterstop"
+              onClick={() => setTrailerOpen(false)}
+              aria-label="Close trailer"
             >
-              ▶ {t(lang, "watchTrailer")}
+              ✕
             </button>
-          ) : (
-            <span className="lw-trailerbtn">▶ {t(lang, "trailerSoon")}</span>
-          )}
-        </div>
+          </>
+        ) : (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={world.poster} alt={world.title} />
+            <div className="lw-trailer">
+              {embed ? (
+                <button
+                  className="lw-trailerbtn"
+                  onClick={() => setTrailerOpen(true)}
+                >
+                  ▶ {t(lang, "watchTrailer")}
+                </button>
+              ) : (
+                <span className="lw-trailerbtn">▶ {t(lang, "trailerSoon")}</span>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="lw-flabel">{t(lang, "synopsis")}</div>
@@ -419,39 +451,6 @@ function WorldDetail({
       >
         {t(lang, "chooseRole")} →
       </button>
-
-      {trailerOpen && embed && (
-        <div className="lw-modal" onClick={() => setTrailerOpen(false)}>
-          <div className="lw-modalcard" onClick={(e) => e.stopPropagation()}>
-            <div className="lw-aihead">
-              <strong>
-                {world.title} — {t(lang, "trailer")}
-              </strong>
-              <button className="lw-back" onClick={() => setTrailerOpen(false)}>
-                ✕
-              </button>
-            </div>
-            {isFile ? (
-              // eslint-disable-next-line jsx-a11y/media-has-caption
-              <video
-                className="lw-trailerframe"
-                src={embed}
-                controls
-                autoPlay
-                playsInline
-              />
-            ) : (
-              <iframe
-                className="lw-trailerframe"
-                src={embed + (embed.includes("?") ? "&" : "?") + "autoplay=1"}
-                title={`${world.title} trailer`}
-                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                allowFullScreen
-              />
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
