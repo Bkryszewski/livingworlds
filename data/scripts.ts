@@ -448,14 +448,146 @@ export const SCRIPTS: Record<string, WorldScript> = {
           "the red-striped ball sat between us. its LED pulsed once, faint, and went dark. ...they were good meat pies. thanks for staying on the line.",
         ],
       },
-      end_report: {
-        id: "end_report",
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // RED MONEY — Luz Rivas. Noir, terse, fatalistic. "Then the water."
+  // -------------------------------------------------------------------------
+  redmoney: {
+    start: "open",
+    nodes: {
+      open: {
+        id: "open",
+        lines: [
+          "there's a job. friday — the sentinel consolidation run down bellaire. branch money headed downtown to the federal reserve.",
+          "tomás brought me a man named wade and a kid named héctor, and a plan that's almost clean. almost.",
+          "i've spent eleven years listening to these trucks. i can hear a misfire in a plan the same as in an engine. this one knocks.",
+        ],
+        choices: [
+          { label: "What do they need you for?", to: "dye" },
+          { label: "Who are these men?", to: "crew" },
+        ],
+      },
+      dye: {
+        id: "dye",
+        lines: [
+          "the load's salted. dye packs — bundles that look like money, weigh like money, and bloom red the second you cut the vault wrong.",
+          "the dye doesn't wash. not off the bills, not off your hands. a stained hundred is a federal flag inside a week.",
+          "out of everyone on god's earth, i'm the one who can tell the salted from the real. that's the whole reason i'm in the room.",
+        ],
+        unlock: "rm_dye",
+        choices: [
+          { label: "Then they can't do it without you.", to: "cut" },
+          { label: "That's leverage. Use it.", to: "cut" },
+        ],
+      },
+      cut: {
+        id: "cut",
+        lines: [
+          "i marked the only safe cut in grease pencil. eight inches low and to the left, over the relay housing. anywhere else trips the timer and the vault dead-bolts.",
+          "i showed them. drew it on the steel. wade nodded. tomás smiled at me the way he does.",
+          "a careful crew, a clean cut, a load only i can read. on paper it's finally the boat.",
+        ],
+        choices: [
+          { label: "The boat?", to: "boat" },
+          { label: "You don't sound sure.", to: "crew" },
+        ],
+      },
+      boat: {
+        id: "boat",
+        lines: [
+          "a shrimper. a tired engine i could bring back from the dead. tomás and me down past galveston and freeport, out where the gulf goes blue and the land lets go of you.",
+          "we've said it to each other in the dark so many times it's worn smooth. then the water. nobody owning either of us.",
+          "that's the thing under all of it. that's what the money's for.",
+        ],
+        unlock: "rm_boat",
+        choices: [
+          { label: "So why does it knock?", to: "crew" },
+          { label: "What's Wade really like?", to: "crew" },
+        ],
+      },
+      crew: {
+        id: "crew",
+        lines: [
+          "tomás i love, which is its own kind of blindness. wade does time the way other men breathe — never a wasted motion, reads me like an engine he's already decided to scrap.",
+          "héctor's nineteen. in it for his mother's mortgage. a brother in the ground already. the kind of kid men like wade leave in a sealed truck and walk away clean.",
+          "and last week, through the warehouse wall, i heard wade say one word — shares — and stop dead the second my boot hit the threshold.",
+        ],
+        unlock: "rm_crew",
+        choices: [
+          { label: "They're cutting somebody out.", to: "suspicion" },
+          { label: "Maybe it's nothing. Money makes men strange.", to: "suspicion" },
+        ],
+      },
+      suspicion: {
+        id: "suspicion",
+        lines: [
+          "that's what i keep telling myself. that the gauge is reading wrong, not the engine. that i'm tired and the water's close and i want it too much to look straight at it.",
+          "but i've never once in eleven years met an engine that lied. it's always the gauge that's honest and the hope that's the liar.",
+          "i'm the only one with eleven bitter years on sentinel's payroll. i'm the one with a reason written down somewhere. i'm the strong part of this plan. and you don't keep the strong part — you leave it behind for the cops to find.",
+        ],
+        choices: [
+          { label: "Then walk. Tonight.", to: "box" },
+          { label: "If you're the fall guy — protect yourself.", to: "box" },
+        ],
+      },
+      box: {
+        id: "box",
+        lines: [
+          "i can't walk. you know i can't. so i did the only thing a woman things get done to ever learns to do. i kept insurance.",
+          "years ago i carried a little gray box out of the sentinel depot in my tool bag. the transmitter that arms the dye packs. never counted. never missed.",
+          "it's in my coverall pocket right now. i can wake every red bundle in that vault from across the room. nobody knows i have it. not wade. not tomás.",
+        ],
+        unlock: "rm_box",
+        choices: [
+          { label: "Hold onto it. Don't tip your hand.", to: "warehouse" },
+          { label: "I hope you're wrong about them.", to: "warehouse" },
+        ],
+      },
+      warehouse: {
+        id: "warehouse",
+        reveal: true,
+        lines: [
+          "it's friday. the truck went down at the light at 8:14, clean, no shot fired. i drove it through the warehouse door myself and the daylight cut off at the knees.",
+          "then i walked back to the vault, and the torch was already lit. and it was on the wrong side. two feet from my mark — the side i told them, three nights running, trips the timer.",
+          "wade isn't trying to open it clean. he never needed my cut. he only ever needed me to say which bundles are real. and tomás won't meet my eyes. that's the whole confession. wade says it flat: you were always the part we leave behind.",
+        ],
+        choices: [
+          { label: "Burn it. The box. Now.", to: "choice" },
+          { label: "Take your share and run.", to: "choice" },
+        ],
+      },
+      choice: {
+        id: "choice",
+        lines: [
+          "héctor's in the corner figuring out he's a number too. the money's packed to the roof through wade's ugly gash — real bundles and salted ones, shoulder to shoulder in the dark.",
+          "my thumb's on the switch in my pocket. one press and the whole fortune bleeds red and becomes worthless paper. or i palm a strap of clean hundreds, walk, and let them have the rest.",
+          "a share would be a string — a piece of them in my pocket forever. or i burn it and walk out owning nothing any of them ever touched. tell me what i do.",
+        ],
+        choices: [
+          { label: "Burn it. Walk out free.", to: "end_burn" },
+          { label: "Take what's yours. You earned it.", to: "end_share" },
+        ],
+      },
+      end_burn: {
+        id: "end_burn",
         ending: true,
         lines: [
-          "i went up the stairwell to write it all down. every account, every name — and the four-day-old notification with my fingerprints on the part where i buried it.",
-          "seven months of the cleanest operation anybody upstairs ever signed off on, and the only crime i can prove is the one i committed against my own case file.",
-          "i stopped on the stairs. looked back. asked micky if the pies were actually good.",
-          "he held up the last one. five dollars. ...i'm coming back down for that. just — give me a second. stay on the line.",
+          "i pressed it. for half a second, nothing — long enough for wade to see it in my face and lunge. then the truck began to bleed.",
+          "crimson smoke out of the torn steel, every bundle drinking the dye that doesn't wash. i told them to run. you can carry it out in your arms and you've got nothing but evidence. so run.",
+          "they ran. tomás last, looking back at a woman he could no longer lie to. i sat in the red smoke, finally and entirely free of every person who ever planned to leave me behind.",
+          "they caught me at the bus station three days later. i never said tomás's name. not once. it wasn't spite — i'd stopped wanting it. that's the whole of my crime and the whole of my freedom. ...stay on the line. then the water. someday.",
+        ],
+      },
+      end_share: {
+        id: "end_share",
+        ending: true,
+        lines: [
+          "i palmed a strap of clean hundreds before my thumb could find the switch. a pound of money, ten thousand dollars, the boat in my coat pocket. and i let them have the rest.",
+          "i told myself it was sense. you don't burn a fortune over a broken heart. i walked out into the white daylight with my cut and my life.",
+          "but the box stayed in my pocket, unpressed — and so did they. every bill i spent was a piece of that warehouse, a piece of tomás, riding with me. a string i tied to my own ankle and called freedom.",
+          "i made it to the coast. bought a piece of a boat. and some nights, listening to a clean engine idle, i think about the woman who'd have pressed the switch — and how she'd have been lighter than me. ...stay on the line a while. it gets quiet out here.",
         ],
       },
     },

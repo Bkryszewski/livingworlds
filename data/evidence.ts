@@ -84,6 +84,28 @@ export const EVIDENCE: Record<string, Evidence> = {
     marginHd:
       "\u2014 held in the ref's palm three seconds, it fires the signal: half a billion through three accounts before the whistle",
   },
+  redmoney: {
+    kind: "card",
+    pushTitle: "The run sheet",
+    headline: "The salted bundles.\nThe one safe cut.",
+    holdText: "hold to read the grease pencil pressed into the steel",
+    revealLine:
+      "wade cut on the wrong side. he never needed my clean opening \u2014 only which bundles are real. but they forgot i kept the box. i can wake every red pack in that vault from across the room. find me the moment they decided i was the part they leave behind. \u2014 L",
+    cardLabel: "Sentinel Armored \u2014 Friday consolidation",
+    cardRows: [
+      ["BUNDLE A1\u2013A6", "CLEAN"],
+      ["BUNDLE B1\u2013B4", "SALTED \u00b7 DYE"],
+      ["BUNDLE C1\u2013C9", "CLEAN"],
+      ["BUNDLE D1\u2013D7", "SALTED \u00b7 DYE"],
+      ["CUT MARK", "8 IN LOW \u00b7 LEFT"],
+    ],
+    pencil: "\u201cCut here. Only here.\u201d",
+    marginWarn:
+      "salted bundles bloom red \u00b7 the dye does not wash \u00b7 a stained bill is a federal flag",
+    marginEq: "THE TECHNICIAN KEPT THE BOX",
+    marginHd:
+      "\u2014 the arming transmitter, walked out of the depot years ago. never counted, never missed. her insurance.",
+  },
 };
 
 export function getEvidence(worldId: string): Evidence | undefined {
