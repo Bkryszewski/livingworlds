@@ -351,6 +351,41 @@ export const WORLDS: World[] = [
     },
   },
 
+  // --- Red Money (short story) — placeholder card; no PDF reader yet ---
+  {
+    id: "redmoney",
+    title: "RED MONEY",
+    character: "—",
+    genre: "Short Story",
+    accent: "#9E1B1B",
+    poster: "/assets/red-money-poster.jpg",
+    trailer: "",
+    tone: "—",
+    passTier: "Festival Pass",
+    locked: true,
+    intro: "",
+    canon: "",
+    hiddenCanon: "",
+    voice: "",
+    defaultOpener: "",
+    roles: [],
+    archive: [],
+    copy: {
+      en: {
+        subtitle: "",
+        logline:
+          "She kept the city's armored trucks running for eleven years. Then they tried to leave her behind.",
+        synopsis: "Coming soon to Living Worlds.",
+      },
+      es: {
+        subtitle: "",
+        logline:
+          "Mantuvo los camiones blindados de la ciudad funcionando once años. Luego intentaron dejarla atrás.",
+        synopsis: "Próximamente en Living Worlds.",
+      },
+    },
+  },
+
   // --- Coming-soon worlds: shown on the dial, acquiring signal ---
   comingSoon("effect", "THE EFFECT", "Thriller", "#C77DFF", {
     en: "A clinical trial's side effect is the truth no one was meant to see.",
