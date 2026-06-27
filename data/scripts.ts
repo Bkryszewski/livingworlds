@@ -592,6 +592,136 @@ export const SCRIPTS: Record<string, WorldScript> = {
       },
     },
   },
+
+  // -------------------------------------------------------------------------
+  // THE ARCHONS — Rafaela Estevez. Clinical, sensory, mounting dread.
+  // -------------------------------------------------------------------------
+  archons: {
+    start: "open",
+    nodes: {
+      open: {
+        id: "open",
+        lines: [
+          "they brought me in quietly. no press. three women in six weeks, all found near water, no cause anyone can name. the file calls it atypical. i can feel the word doing work it doesn't want to name.",
+          "i'm what they call a viewer. i don't picture maps or force a distance. i let the place arrive on its own, and i watch.",
+          "i ran a session today. i saw the basement, the man, the woman tied to the pipe — alive. and i saw something i did not put in my report.",
+        ],
+        choices: [
+          { label: "Tell me about the basement.", to: "session" },
+          { label: "Why are these women dying?", to: "victims" },
+        ],
+      },
+      session: {
+        id: "session",
+        lines: [
+          "concrete. damp. a single bulb swaying. a man with his back to me, breathing hard. a woman bound to a pipe in front of him, her breath shallow. alive, for now.",
+          "the fear in that room wasn't fresh. it had been cultivated. the place felt used — returned to. this was never opportunity. someone goes back.",
+          "i held my distance. observation only. posture, environment, residue. and then i noticed what was on him.",
+        ],
+        unlock: "ar_basement",
+        choices: [
+          { label: "What was on him?", to: "shadows" },
+          { label: "Did anyone else see it?", to: "shadows" },
+        ],
+      },
+      shadows: {
+        id: "shadows",
+        lines: [
+          "two shapes. tall. clinging to the man, draped across his shoulders like weight without mass. they aren't cast by the light. they don't behave like absence. they never settle long enough to be defined.",
+          "i could hear them, though not as sound. a cadence first — pressure, rhythm — then meaning, arriving in the body without passing through the mind. something ancient. tuned to fear the way a key is tuned to a lock.",
+          "they leaned toward his head and turned his rage up and down by increments. like adjusting a dial. the woman sobbed, and the room drank it.",
+        ],
+        unlock: "ar_shadows",
+        choices: [
+          { label: "And then they noticed you.", to: "turned" },
+          { label: "These victims — what links them?", to: "victims" },
+        ],
+      },
+      turned: {
+        id: "turned",
+        lines: [
+          "...one of them paused. and slowly, deliberately, it turned its attention away from the man and toward me.",
+          "no face. no eyes. nothing that should let it perceive. and still i knew, with absolute certainty, that it was aware of me.",
+          "i broke the session hard — came up like surfacing from deep water. since then it doesn't wait for a coordinate. reflections in glass. something behind me on the trail at dusk. i dream in languages i've never heard.",
+        ],
+        choices: [
+          { label: "They want something from you.", to: "message" },
+          { label: "Back up — who are the victims?", to: "victims" },
+        ],
+      },
+      victims: {
+        id: "victims",
+        lines: [
+          "they ran toxicology again. nothing acute. no forced intoxication. but every one of them had a history — drink, pills, psychedelics, depression. not all of it. enough of it.",
+          "they were already thin. uncontained. pulled open without ever being taught how to close.",
+          "that's what these things look for. not the strong ones. the open ones. and i have spent my whole career learning to open on command.",
+        ],
+        unlock: "ar_victims",
+        choices: [
+          { label: "What's the message?", to: "message" },
+          { label: "Then stop opening.", to: "reveal" },
+        ],
+      },
+      message: {
+        id: "message",
+        lines: [
+          "my phone buzzed. no caller id. i deleted it. it buzzed again. the third time i saw the words before i could stop myself. i see you.",
+          "it didn't come from the killer. it came through him. later, on price's phone, on speaker — static, then a cadence that filled the room without getting louder, and a voice not quite human said: she sees us.",
+          "price's hand shook setting the phone down. they don't need the man anymore. they were only ever using him to learn the shape of this.",
+        ],
+        unlock: "ar_message",
+        choices: [
+          { label: "The shape of what?", to: "reveal" },
+          { label: "You have to disappear.", to: "reveal" },
+        ],
+      },
+      reveal: {
+        id: "reveal",
+        reveal: true,
+        lines: [
+          "the shape of my attention. price said it before i'd let myself: you're not chasing him anymore. you're leading him.",
+          "i was never observing the hunt. i'm in it. they follow attention; fear sharpens it; panic leaves a trail. and they've learned the last thing they needed — they do not need a broken man to find the ones who can see. they can come straight for me.",
+          "they moved me to a safe house. patrols, no electronic footprint. i listened without believing it would matter.",
+        ],
+        choices: [
+          { label: "There has to be a way to use that.", to: "plan" },
+          { label: "Whatever you do, don't open again.", to: "plan" },
+        ],
+      },
+      plan: {
+        id: "plan",
+        lines: [
+          "there is one thing. i open deliberately — just enough to draw the full pressure onto myself — and price tracks the man moving toward the house and takes him. it isn't avoidance. it's containment. it has a cost, and i know exactly what it is.",
+          "or i do the opposite. i don't reach. i don't open. i name the lamp, the chair, the cold coffee, until the pressure recedes, and i try to become someone they lose the thread of. i survive it without ever solving it.",
+          "it's full dark. price is on the perimeter. tell me what i do.",
+        ],
+        choices: [
+          { label: "Open. Draw them onto you.", to: "end_contain" },
+          { label: "Go dark. Disappear.", to: "end_dark" },
+        ],
+      },
+      end_contain: {
+        id: "end_contain",
+        ending: true,
+        lines: [
+          "i sat on the floor and reached inward, to the place where the pressure waited, and i let them have all of my attention at once. i see you, i thought — not a challenge. an invitation.",
+          "the man came up the gravel loud with a mind that wasn't entirely his. the door burst in. and then the shadows peeled off him in one fluid motion and surged toward me. the room thickened. the cadence flooded in without mediation: you called us.",
+          "i screamed. gunfire. a body hit the floor. the pressure vanished. the man lay restrained in the hall, alive and hollowed out — whatever drove him, gone.",
+          "price said it's over. it isn't. they're gone from him. not from here. they know how to find people who can see them now, and they know they don't need broken ones to do it. i've started writing it all down — the patterns, the cadences, the rules i ignored. this isn't the end of my work. it's the beginning of vigilance. ...stay on the line. i don't want the quiet just yet.",
+        ],
+      },
+      end_dark: {
+        id: "end_dark",
+        ending: true,
+        lines: [
+          "i didn't reach. i sat in the dark and named the room out loud. the lamp. the chair. the cold cup. the seam in the curtain. ballast. noise. anything physical to stand on.",
+          "the pressure pressed and pressed and then, slowly, lost the thread of me. they took the man some other way, or they didn't — and either way i stepped out of the program and let the world close over where i'd been.",
+          "i told myself it was survival. that observation could be neutral if i simply refused to observe. that you could un-see a thing by looking away.",
+          "and then, on a plane far from austin, suspended between ground and sky, i felt it return. faint. unmistakable. something out there had already learned the shape of my awareness, and looking away had only taught it patience. ...stay on the line a while. i don't like the silence anymore.",
+        ],
+      },
+    },
+  },
 };
 
 export function getScript(worldId: string): WorldScript | undefined {

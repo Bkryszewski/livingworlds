@@ -106,6 +106,27 @@ export const EVIDENCE: Record<string, Evidence> = {
     marginHd:
       "\u2014 the arming transmitter, walked out of the depot years ago. never counted, never missed. her insurance.",
   },
+  archons: {
+    kind: "card",
+    pushTitle: "The case file",
+    headline: "Three near water.\nNo cause. No witness.",
+    holdText: "hold to read the line the toxicology buried",
+    revealLine:
+      "they were all already open \u2014 drink, pills, the kind of grief that thins a person out. these things don't pick the strong. they pick the ones who can't close. and i have spent my whole life learning to open on command. find me the moment one of them turned toward me. \u2014 R",
+    cardLabel: "Task force \u00b7 recovered near water",
+    cardRows: [
+      ["VICTIM 01", "no cause \u00b7 no entry"],
+      ["VICTIM 02", "no cause \u00b7 no entry"],
+      ["VICTIM 03", "no cause \u00b7 no entry"],
+      ["COMMON", "histories \u00b7 'already thin'"],
+    ],
+    pencil: "\u201cUncontained. Pulled open.\u201d",
+    marginWarn:
+      "they follow attention \u00b7 fear sharpens it \u00b7 panic leaves a trail",
+    marginEq: "THEY LEARNED THE SHAPE OF HER AWARENESS",
+    marginHd:
+      "\u2014 they no longer need a broken killer to hunt. they can find anyone who can see them. the viewer is the next coordinate.",
+  },
 };
 
 export function getEvidence(worldId: string): Evidence | undefined {
