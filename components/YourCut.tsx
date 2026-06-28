@@ -33,7 +33,7 @@ export default function YourCut({
   onBoxOffice: () => void;
   onReplay: () => void;
 }) {
-  const [showScript, setShowScript] = useState(false);
+  const [scriptOpen, setScriptOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const coverage = useMemo(
@@ -138,14 +138,10 @@ export default function YourCut({
         ))}
       </div>
 
-      {/* script - save locally */}
+      {/* script — open a full reader */}
       <div className="lw-scriptrow">
-        <button
-          className="lw-scriptbtn"
-          onClick={() => setShowScript((s) => !s)}
-        >
-          {showScript ? "▾ " : "▸ "}
-          {t(lang, "yourScript")}
+        <button className="lw-scriptbtn" onClick={() => setScriptOpen(true)}>
+          ⤢ {t(lang, "yourScript")}
         </button>
         <button className="lw-scriptbtn" onClick={copyScript}>
           {copied ? t(lang, "copied") : t(lang, "copyText")}
@@ -154,9 +150,6 @@ export default function YourCut({
           {t(lang, "downloadTxt")}
         </button>
       </div>
-      {showScript && (
-        <pre className="lw-scriptbox">{script || t(lang, "thinking")}</pre>
-      )}
 
       <div className="lw-stats" style={{ marginTop: 16 }}>
         <div className="lw-stat" style={{ ["--accent" as string]: world.accent }}>
@@ -186,6 +179,107 @@ export default function YourCut({
       </div>
 
       <PassCTA lang={lang} onBoxOffice={onBoxOffice} onReplay={onReplay} />
+
+      {scriptOpen && (
+        <div className="lw-modal" onClick={() => setScriptOpen(false)}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(680px, 94vw)",
+              height: "min(86vh, 920px)",
+              display: "flex",
+              flexDirection: "column",
+              background: "#0a0d14",
+              border: "1px solid var(--line)",
+              borderRadius: 16,
+              overflow: "hidden",
+              boxShadow: "0 24px 80px rgba(0,0,0,.6)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                padding: "14px 16px",
+                borderBottom: "1px solid var(--line)",
+                flex: "0 0 auto",
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 600,
+                  fontSize: 15,
+                  color: "var(--ink, #f5f0df)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {world.title} · {role.label}
+              </div>
+              <button
+                onClick={() => setScriptOpen(false)}
+                aria-label="Close"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--faint, #9aa0ad)",
+                  fontSize: 22,
+                  lineHeight: 1,
+                  cursor: "pointer",
+                  flex: "0 0 auto",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <pre
+              style={{
+                flex: "1 1 auto",
+                overflowY: "auto",
+                margin: 0,
+                padding: "20px",
+                background: "#0a0d14",
+                color: "#e8edf7",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                fontSize: 14.5,
+                lineHeight: 1.75,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}
+            >
+              {script || t(lang, "thinking")}
+            </pre>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                padding: "12px 16px",
+                borderTop: "1px solid var(--line)",
+                flex: "0 0 auto",
+              }}
+            >
+              <button className="lw-scriptbtn" onClick={copyScript}>
+                {copied ? t(lang, "copied") : t(lang, "copyText")}
+              </button>
+              <button className="lw-scriptbtn" onClick={downloadScript}>
+                {t(lang, "downloadTxt")}
+              </button>
+              <button
+                className="lw-scriptbtn"
+                style={{ marginLeft: "auto" }}
+                onClick={() => setScriptOpen(false)}
+              >
+                {lang === "es" ? "Cerrar" : "Close"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
