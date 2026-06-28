@@ -40,8 +40,8 @@ export const PASSES: Pass[] = [
     id: "festival",
     icon: "🎬",
     name: "Festival Pass",
-    price: "$24.99/yr",
-    priceNote: "or $4.99/mo",
+    price: "$24.99",
+    priceNote: "1-year pass",
     accent: "#46C7E6",
     ribbon: "Most popular",
     tag: "All-access. Every screening, every reality.",
@@ -155,6 +155,25 @@ export default function BoxOffice({
                 <button className="lw-passcta current" disabled>
                   ✦ {t(lang, "yourPass")}
                 </button>
+              ) : p.id === "festival" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <button
+                    className="lw-passcta"
+                    onClick={() => onChoose("festival_year")}
+                  >
+                    {lang === "es"
+                      ? "Pase de 1 año · $24.99"
+                      : "1-Year Pass · $24.99"}
+                  </button>
+                  <button
+                    className="lw-passcta"
+                    onClick={() => onChoose("festival_30day")}
+                  >
+                    {lang === "es"
+                      ? "Pase de 30 días · $4.99"
+                      : "30-Day Pass · $4.99"}
+                  </button>
+                </div>
               ) : (
                 <button className="lw-passcta" onClick={() => onChoose(p.id)}>
                   {cta}

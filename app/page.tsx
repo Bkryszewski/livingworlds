@@ -20,7 +20,7 @@ import Onboard from "@/components/Onboard";
 import Account from "@/components/Account";
 import HowToPlay from "@/components/HowToPlay";
 import { supabase, syncProfile, type LWProfile } from "@/lib/supabase";
-import { canPlayWorld, SAMCART_CHECKOUT } from "@/lib/access";
+import { canPlayWorld, SAMCART_CHECKOUT, effectiveTier } from "@/lib/access";
 import {
   loadProgress,
   recordPlaythrough,
@@ -151,7 +151,7 @@ export default function Page() {
       return next;
     });
     if (p.language === "en" || p.language === "es") setLang(p.language);
-    setPass(p.pass_tier || "guest");
+    setPass(effectiveTier(p.pass_tier, p.expires));
   }
 
   // Restore any existing session on load, sync the profile, and react to

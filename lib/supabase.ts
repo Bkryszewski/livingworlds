@@ -38,6 +38,7 @@ export interface LWProfile {
   language: string;
   pass_tier: string;
   status: string;
+  expires: string | null;
 }
 
 /** Send a passwordless magic link. Name + language travel as user metadata. */
@@ -95,7 +96,7 @@ export async function syncProfile(): Promise<LWProfile | null> {
 
   const { data } = await sb
     .from("profiles")
-    .select("name,email,language,pass_tier,status")
+    .select("name,email,language,pass_tier,status,current_period_end")
     .eq("id", user.id)
     .single();
 
@@ -105,5 +106,6 @@ export async function syncProfile(): Promise<LWProfile | null> {
     language: (data?.language as string) || meta.language || "en",
     pass_tier: (data?.pass_tier as string) || "guest",
     status: (data?.status as string) || "active",
+    expires: (data?.current_period_end as string) || null,
   };
 }

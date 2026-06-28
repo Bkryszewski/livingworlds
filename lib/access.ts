@@ -20,12 +20,15 @@ const RANK: Record<string, number> = {
 export const FREE_WORLD_IDS = ["perdido"];
 
 // ─────────────────────────────────────────────────────────────────────────
-// SAMCART CHECKOUT LINKS. Paste the checkout URL for each paid tier between
-// the quotes. While a tier's link is blank, its Box Office button tells the
-// person checkout isn't ready yet (it never grants the tier for free).
+// SAMCART CHECKOUT LINKS. Two one-time, time-boxed Festival passes:
+//   festival_year  → $24.99, 365 days of access
+//   festival_30day → $4.99, 30 days of access
+// Paste each product's checkout URL between its quotes. While a link is
+// blank, its button tells the person checkout isn't ready (never grants free).
 // ─────────────────────────────────────────────────────────────────────────
 export const SAMCART_CHECKOUT: Record<string, string> = {
-  festival: "",
+  festival_year: "",
+  festival_30day: "",
   judge: "",
   studio: "",
 };
@@ -33,6 +36,23 @@ export const SAMCART_CHECKOUT: Record<string, string> = {
 /** Minimum tier required to play a given world. */
 export function requiredTier(worldId: string): Tier {
   return FREE_WORLD_IDS.includes(worldId) ? "guest" : "festival";
+}
+
+/**
+ * The tier actually in effect right now. Paid passes are one-time and
+ * time-boxed: once `expiresISO` is in the past, access lapses back to guest.
+ * A missing expiry is treated as active (e.g. a comped/manual grant).
+ */
+export function effectiveTier(
+  tier: string | undefined,
+  expiresISO?: string | null
+): string {
+  const t = tier || "guest";
+  if (t === "guest") return "guest";
+  if (!expiresISO) return t;
+  const exp = Date.parse(expiresISO);
+  if (Number.isNaN(exp)) return t;
+  return Date.now() < exp ? t : "guest";
 }
 
 /** Can a holder of `tier` play `worldId`? */
