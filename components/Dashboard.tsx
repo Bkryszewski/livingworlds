@@ -1,17 +1,19 @@
 "use client";
 import type { Lang, World } from "@/lib/types";
 import { t } from "@/lib/i18n";
-import { deriveSkills, type PlayerProgress } from "@/lib/progress";
+import { deriveSkills, type PlayerProgress, type CutRecord } from "@/lib/progress";
 
 /**
  * Dashboard — the player's profile / progress screen. Shows their festival
- * credential, RPG-style skills that grow with play, lifetime totals, and a
- * roster of worlds they've played. Progress is read from lib/progress.ts
- * (localStorage, per-browser) and recorded after each "Your Cut".
+ * credential, RPG-style skills that grow with play, lifetime totals, a roster
+ * of worlds they've played, and their saved cuts (scene scripts) with copy /
+ * download. When signed in, all of this is the account's own history (from
+ * Supabase); as a guest it's local to the browser.
  */
 export default function Dashboard({
   lang,
   progress,
+  cuts,
   passLabel,
   worlds,
   onOpenWorld,
@@ -20,6 +22,7 @@ export default function Dashboard({
 }: {
   lang: Lang;
   progress: PlayerProgress;
+  cuts: CutRecord[];
   passLabel: string;
   worlds: World[];
   onOpenWorld: (id: string) => void;
@@ -29,6 +32,32 @@ export default function Dashboard({
   const skills = deriveSkills(progress);
   const playedIds = Object.keys(progress.worlds);
   const played = worlds.filter((w) => playedIds.includes(w.id));
+
+  function cutFileText(c: CutRecord): string {
+    return c.script || "";
+  }
+  function copyCut(c: CutRecord) {
+    try {
+      void navigator.clipboard.writeText(cutFileText(c));
+    } catch {
+      /* clipboard blocked */
+    }
+  }
+  function downloadCut(c: CutRecord) {
+    try {
+      const blob = new Blob([cutFileText(c)], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${c.worldId}-cut.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      /* download blocked */
+    }
+  }
 
   return (
     <div className="lw-view">
@@ -111,6 +140,55 @@ export default function Dashboard({
             );
           })}
         </div>
+      )}
+
+      {cuts.length > 0 && (
+        <>
+          <div className="lw-flabel">
+            {lang === "es" ? "Tus versiones (cuts)" : "Your cuts"}
+          </div>
+          <div className="lw-dashworlds">
+            {cuts.map((c, i) => {
+              const w = worlds.find((x) => x.id === c.worldId);
+              const role = w?.roles.find((r) => r.id === c.roleId);
+              return (
+                <div
+                  key={i}
+                  className="lw-worldrow"
+                  style={{ ["--accent" as string]: w?.accent || "#5BE0E6" }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {w && <img src={w.poster} alt={w.title} />}
+                  <div className="meta">
+                    <div className="ti">{w?.title || c.worldId}</div>
+                    <div className="su">
+                      {role?.label || c.roleId || ""}
+                      {c.coverageScore != null
+                        ? ` · ${c.coverageScore}/10`
+                        : ""}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      className="lw-scriptbtn"
+                      onClick={() => copyCut(c)}
+                      disabled={!c.script}
+                    >
+                      {t(lang, "copyText")}
+                    </button>
+                    <button
+                      className="lw-scriptbtn"
+                      onClick={() => downloadCut(c)}
+                      disabled={!c.script}
+                    >
+                      {t(lang, "downloadTxt")}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <button

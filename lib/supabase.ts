@@ -109,3 +109,76 @@ export async function syncProfile(): Promise<LWProfile | null> {
     expires: (data?.current_period_end as string) || null,
   };
 }
+
+// --- Cloud playthroughs (per-account progress + saved cuts) -------------------
+
+export interface CloudPlaythrough {
+  world_id: string;
+  role_id: string | null;
+  ending: string | null;
+  clues: number;
+  exchanges: number;
+  trust: number;
+  coverage_score: number | null;
+  script: string | null;
+  created_at: string;
+}
+
+/** Save one finished playthrough to the signed-in person's account. */
+export async function saveCloudPlaythrough(row: {
+  worldId: string;
+  roleId: string | null;
+  ending?: string | null;
+  clues: number;
+  exchanges: number;
+  trust: number;
+  coverageScore?: number | null;
+  script?: string | null;
+}): Promise<void> {
+  const sb = supabase();
+  if (!sb) return;
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return;
+  await sb.from("playthroughs").insert({
+    user_id: user.id,
+    world_id: row.worldId,
+    role_id: row.roleId,
+    ending: row.ending ?? null,
+    clues: row.clues,
+    exchanges: row.exchanges,
+    trust: row.trust,
+    coverage_score: row.coverageScore ?? null,
+    script: row.script ?? null,
+  });
+}
+
+/** Load the signed-in person's playthroughs, newest first. */
+export async function loadCloudPlaythroughs(): Promise<CloudPlaythrough[]> {
+  const sb = supabase();
+  if (!sb) return [];
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return [];
+  const { data } = await sb
+    .from("playthroughs")
+    .select(
+      "world_id,role_id,ending,clues,exchanges,trust,coverage_score,script,created_at"
+    )
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+  return (data as CloudPlaythrough[]) || [];
+}
+
+/** Delete all of the signed-in person's playthroughs (dashboard reset). */
+export async function clearCloudPlaythroughs(): Promise<void> {
+  const sb = supabase();
+  if (!sb) return;
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) return;
+  await sb.from("playthroughs").delete().eq("user_id", user.id);
+}

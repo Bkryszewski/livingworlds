@@ -59,12 +59,13 @@ export function resetProgress(): PlayerProgress {
   return { worlds: {}, totalPlays: 0, totalClues: 0, totalExchanges: 0 };
 }
 
-/** Fold one finished playthrough into the running progress and persist. */
-export function recordPlaythrough(
+/** Fold one finished playthrough into running progress (pure, no persistence). */
+export function foldPlaythrough(
   prev: PlayerProgress,
   worldId: string,
   roleId: string | null,
-  stats: { trust: number; clues: number; exchanges: number }
+  stats: { trust: number; clues: number; exchanges: number },
+  when: number = Date.now()
 ): PlayerProgress {
   const w = prev.worlds[worldId] || {
     plays: 0,
@@ -76,7 +77,7 @@ export function recordPlaythrough(
   };
   const roles =
     roleId && !w.roles.includes(roleId) ? [...w.roles, roleId] : w.roles;
-  const next: PlayerProgress = {
+  return {
     worlds: {
       ...prev.worlds,
       [worldId]: {
@@ -85,15 +86,105 @@ export function recordPlaythrough(
         bestTrust: Math.max(w.bestTrust, stats.trust || 0),
         clues: w.clues + (stats.clues || 0),
         completed: true,
-        lastPlayed: Date.now(),
+        lastPlayed: when,
       },
     },
     totalPlays: prev.totalPlays + 1,
     totalClues: prev.totalClues + (stats.clues || 0),
     totalExchanges: prev.totalExchanges + (stats.exchanges || 0),
   };
+}
+
+/** Fold one finished playthrough into local progress and persist it. */
+export function recordPlaythrough(
+  prev: PlayerProgress,
+  worldId: string,
+  roleId: string | null,
+  stats: { trust: number; clues: number; exchanges: number }
+): PlayerProgress {
+  const next = foldPlaythrough(prev, worldId, roleId, stats);
   saveProgress(next);
   return next;
+}
+
+/** Aggregate a list of saved playthrough rows into a PlayerProgress shape. */
+export function aggregateProgress(
+  rows: {
+    world_id: string;
+    role_id: string | null;
+    clues: number;
+    exchanges: number;
+    trust: number;
+    created_at?: string;
+  }[]
+): PlayerProgress {
+  let p: PlayerProgress = {
+    worlds: {},
+    totalPlays: 0,
+    totalClues: 0,
+    totalExchanges: 0,
+  };
+  // oldest first so lastPlayed ends up correct
+  const ordered = [...rows].sort(
+    (a, b) =>
+      (a.created_at ? Date.parse(a.created_at) : 0) -
+      (b.created_at ? Date.parse(b.created_at) : 0)
+  );
+  for (const r of ordered) {
+    p = foldPlaythrough(
+      p,
+      r.world_id,
+      r.role_id,
+      { trust: r.trust, clues: r.clues, exchanges: r.exchanges },
+      r.created_at ? Date.parse(r.created_at) : Date.now()
+    );
+  }
+  return p;
+}
+
+// --- Saved cuts (the scene script from each playthrough) ----------------------
+
+export interface CutRecord {
+  worldId: string;
+  roleId: string | null;
+  script: string;
+  coverageScore?: number | null;
+  createdAt: number;
+}
+
+const CUTS_KEY = "livingworlds:cuts";
+const MAX_CUTS = 24;
+
+export function loadLocalCuts(): CutRecord[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(CUTS_KEY);
+    return raw ? (JSON.parse(raw) as CutRecord[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addLocalCut(c: CutRecord): CutRecord[] {
+  const next = [c, ...loadLocalCuts()].slice(0, MAX_CUTS);
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(CUTS_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  }
+  return next;
+}
+
+export function clearLocalCuts(): void {
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.removeItem(CUTS_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 // --- Skills: lightweight RPG-style growth derived from cumulative play. ---

@@ -19,15 +19,28 @@ import Dashboard from "@/components/Dashboard";
 import Onboard from "@/components/Onboard";
 import Account from "@/components/Account";
 import HowToPlay from "@/components/HowToPlay";
-import { supabase, syncProfile, type LWProfile } from "@/lib/supabase";
+import {
+  supabase,
+  syncProfile,
+  saveCloudPlaythrough,
+  loadCloudPlaythroughs,
+  clearCloudPlaythroughs,
+  type LWProfile,
+} from "@/lib/supabase";
 import { canPlayWorld, SAMCART_CHECKOUT, effectiveTier } from "@/lib/access";
 import {
   loadProgress,
   recordPlaythrough,
   resetProgress,
+  aggregateProgress,
   EMPTY_PROGRESS,
+  loadLocalCuts,
+  addLocalCut,
+  clearLocalCuts,
   type PlayerProgress,
+  type CutRecord,
 } from "@/lib/progress";
+import { computeCoverage } from "@/lib/coverage";
 
 const AI_STORE_KEY = "livingworlds:ai";
 const PROFILE_KEY = "livingworlds:profile";
@@ -75,6 +88,7 @@ export default function Page() {
   const [pass, setPass] = useState("guest");
   const [passFrom, setPassFrom] = useState<Stage>("selector");
   const [progress, setProgress] = useState<PlayerProgress>(EMPTY_PROGRESS);
+  const [cuts, setCuts] = useState<CutRecord[]>([]);
   const [dashFrom, setDashFrom] = useState<Stage>("selector");
   const [toast, setToast] = useState("");
   const [accountOpen, setAccountOpen] = useState(false);
@@ -132,6 +146,7 @@ export default function Page() {
       /* ignore */
     }
     setProgress(loadProgress());
+    setCuts(loadLocalCuts());
     try {
       const p = window.localStorage.getItem(PROFILE_KEY);
       if (p) setProfile({ name: "", email: "", ...JSON.parse(p) });
@@ -175,12 +190,30 @@ export default function Page() {
     let active = true;
     const refresh = async () => {
       const prof = await syncProfile();
-      if (active && prof) applyProfile(prof);
+      if (!active || !prof) return;
+      applyProfile(prof);
+      // Per-account progress: replace local view with this account's history.
+      const rows = await loadCloudPlaythroughs();
+      if (!active) return;
+      setProgress(aggregateProgress(rows));
+      setCuts(
+        rows.map((r) => ({
+          worldId: r.world_id,
+          roleId: r.role_id,
+          script: r.script || "",
+          coverageScore: r.coverage_score,
+          createdAt: Date.parse(r.created_at),
+        }))
+      );
     };
     refresh();
     const { data: sub } = sb.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") refresh();
-      if (event === "SIGNED_OUT" && active) setAuthProfile(null);
+      if (event === "SIGNED_OUT" && active) {
+        setAuthProfile(null);
+        setProgress(loadProgress());
+        setCuts(loadLocalCuts());
+      }
     });
     return () => {
       active = false;
@@ -260,7 +293,48 @@ export default function Page() {
     setStats(s);
     setCutScript(script);
     setCutLoading(false);
-    if (worldId) setProgress((p) => recordPlaythrough(p, worldId, roleId, s));
+    if (worldId) {
+      const w = getWorld(worldId);
+      const coverageScore = w
+        ? computeCoverage(s, { archiveSize: w.archive.length }).score
+        : null;
+      if (authProfile) {
+        // Signed in → save to this account, then reload its history.
+        void saveCloudPlaythrough({
+          worldId,
+          roleId,
+          clues: s.clues,
+          exchanges: s.exchanges,
+          trust: s.trust,
+          coverageScore,
+          script,
+        }).then(async () => {
+          const rows = await loadCloudPlaythroughs();
+          setProgress(aggregateProgress(rows));
+          setCuts(
+            rows.map((r) => ({
+              worldId: r.world_id,
+              roleId: r.role_id,
+              script: r.script || "",
+              coverageScore: r.coverage_score,
+              createdAt: Date.parse(r.created_at),
+            }))
+          );
+        });
+      } else {
+        // Guest → local only.
+        setProgress((p) => recordPlaythrough(p, worldId, roleId, s));
+        setCuts(
+          addLocalCut({
+            worldId,
+            roleId,
+            script,
+            coverageScore,
+            createdAt: Date.now(),
+          })
+        );
+      }
+    }
     setStage("cut");
   }
 
@@ -480,6 +554,7 @@ export default function Page() {
             <Dashboard
               lang={lang}
               progress={progress}
+              cuts={cuts}
               passLabel={passName(pass)}
               worlds={WORLDS}
               onOpenWorld={(id) => openWorld(id)}
@@ -488,7 +563,17 @@ export default function Page() {
                 setStage("boxoffice");
               }}
               onReset={() => {
-                setProgress(resetProgress());
+                if (authProfile) {
+                  void clearCloudPlaythroughs().then(() => {
+                    setProgress(EMPTY_PROGRESS);
+                    setCuts([]);
+                  });
+                } else {
+                  resetProgress();
+                  clearLocalCuts();
+                  setProgress(EMPTY_PROGRESS);
+                  setCuts([]);
+                }
                 flash(lang === "es" ? "Progreso reiniciado" : "Progress reset");
               }}
             />
