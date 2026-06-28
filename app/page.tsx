@@ -79,6 +79,7 @@ export default function Page() {
   const [toast, setToast] = useState("");
   const [accountOpen, setAccountOpen] = useState(false);
   const [howToOpen, setHowToOpen] = useState(false);
+  const [pendingPass, setPendingPass] = useState<string | null>(null);
   const [authProfile, setAuthProfile] = useState<LWProfile | null>(null);
 
   function flash(msg: string) {
@@ -92,23 +93,35 @@ export default function Page() {
       flash(lang === "es" ? "Pase de Invitado activo" : "Guest Pass active");
       return;
     }
-    // Paid tiers are granted only by a real SamCart purchase (via the webhook
-    // that sets pass_tier on the profile). Here we just send them to checkout.
+    // Paid passes: only proceed if a checkout link is configured, and always
+    // show the "use the same email" reminder before sending them to SamCart.
     const url = SAMCART_CHECKOUT[id];
-    if (url) {
-      try {
-        window.open(url, "_blank", "noopener");
-      } catch {
-        /* popup blocked */
-      }
-      flash(lang === "es" ? "Abriendo el pago…" : "Opening checkout…");
-    } else {
+    if (!url) {
       flash(
         lang === "es"
           ? "El enlace de pago aún no está configurado."
           : "Checkout link isn't set up yet."
       );
+      return;
     }
+    setPendingPass(id);
+  }
+
+  // Open the SamCart checkout for the pending pass, pre-filling the buyer's
+  // email when we know it (so payment and app account match).
+  function proceedToCheckout() {
+    if (!pendingPass) return;
+    const base = SAMCART_CHECKOUT[pendingPass];
+    const email = authProfile?.email || profile.email;
+    const url = email
+      ? base + (base.includes("?") ? "&" : "?") + "email=" + encodeURIComponent(email)
+      : base;
+    try {
+      window.open(url, "_blank", "noopener");
+    } catch {
+      /* popup blocked */
+    }
+    setPendingPass(null);
   }
 
   useEffect(() => {
@@ -520,6 +533,63 @@ export default function Page() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <HowToPlay lang={lang} onClose={() => setHowToOpen(false)} />
+              </div>
+            </div>
+          )}
+
+          {pendingPass && (
+            <div className="lw-modal" onClick={() => setPendingPass(null)}>
+              <div
+                className="lw-modalcard"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="lw-view" style={{ paddingTop: 8 }}>
+                  <div className="lw-kicker">
+                    {lang === "es" ? "Antes de pagar" : "Before you pay"}
+                  </div>
+                  <h1 className="lw-title" style={{ marginBottom: 8 }}>
+                    {lang === "es"
+                      ? "Usa el mismo correo"
+                      : "Use the same email"}
+                  </h1>
+                  <p className="lw-sub">
+                    {authProfile?.email || profile.email
+                      ? lang === "es"
+                        ? `Llenaremos el pago con tu correo (${
+                            authProfile?.email || profile.email
+                          }). Paga con ese mismo correo y tu pase se activará solo cuando vuelvas a la app.`
+                        : `We'll pre-fill checkout with your email (${
+                            authProfile?.email || profile.email
+                          }). Pay with that same email and your pass unlocks automatically when you return to the app.`
+                      : lang === "es"
+                      ? "Después de pagar, inicia sesión en la app con el MISMO correo que uses al pagar. Así se activa tu pase."
+                      : "After you pay, sign into the app using the SAME email you use at checkout. That's how your pass unlocks."}
+                  </p>
+                  <button
+                    className="lw-cta"
+                    style={{ marginTop: 18 }}
+                    onClick={proceedToCheckout}
+                  >
+                    {lang === "es" ? "Continuar al pago" : "Continue to checkout"}{" "}
+                    →
+                  </button>
+                  <button
+                    onClick={() => setPendingPass(null)}
+                    style={{
+                      marginTop: 10,
+                      width: "100%",
+                      background: "transparent",
+                      border: "1px solid var(--line, #2a2a33)",
+                      color: "var(--faint, #9aa0ad)",
+                      borderRadius: 12,
+                      padding: "11px 14px",
+                      cursor: "pointer",
+                      font: "inherit",
+                    }}
+                  >
+                    {lang === "es" ? "Cancelar" : "Cancel"}
+                  </button>
+                </div>
               </div>
             </div>
           )}

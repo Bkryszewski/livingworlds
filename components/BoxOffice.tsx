@@ -173,6 +173,18 @@ export default function BoxOffice({
                       ? "Pase de 30 días · $4.99"
                       : "30-Day Pass · $4.99"}
                   </button>
+                  <p
+                    style={{
+                      margin: "4px 2px 0",
+                      fontSize: 11.5,
+                      lineHeight: 1.4,
+                      color: "var(--faint, #9aa0ad)",
+                    }}
+                  >
+                    {lang === "es"
+                      ? "🔑 Inicia sesión con el mismo correo que uses al pagar — así se activa tu pase."
+                      : "🔑 Sign in with the same email you use at checkout — that's how your pass unlocks."}
+                  </p>
                 </div>
               ) : (
                 <button className="lw-passcta" onClick={() => onChoose(p.id)}>
