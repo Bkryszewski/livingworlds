@@ -18,6 +18,7 @@ import BoxOffice, { passName } from "@/components/BoxOffice";
 import Dashboard from "@/components/Dashboard";
 import Onboard from "@/components/Onboard";
 import Account from "@/components/Account";
+import HowToPlay from "@/components/HowToPlay";
 import { supabase, syncProfile, type LWProfile } from "@/lib/supabase";
 import {
   loadProgress,
@@ -76,6 +77,7 @@ export default function Page() {
   const [dashFrom, setDashFrom] = useState<Stage>("selector");
   const [toast, setToast] = useState("");
   const [accountOpen, setAccountOpen] = useState(false);
+  const [howToOpen, setHowToOpen] = useState(false);
   const [authProfile, setAuthProfile] = useState<LWProfile | null>(null);
 
   function flash(msg: string) {
@@ -279,6 +281,13 @@ export default function Page() {
                   </button>
                 )}
                 <button
+                  className="lw-aibadge"
+                  onClick={() => setHowToOpen(true)}
+                  aria-label={lang === "es" ? "Cómo se juega" : "How to play"}
+                >
+                  ?
+                </button>
+                <button
                   className={`lw-aibadge ${aiConfig.enabled ? "on" : ""}`}
                   onClick={() => setAiOpen(true)}
                   aria-label={t(lang, "aiEngine")}
@@ -325,6 +334,7 @@ export default function Page() {
             <Hero
               lang={lang}
               onLang={setLang}
+              onHowTo={() => setHowToOpen(true)}
               onEnter={() =>
                 setStage(profile.name ? "selector" : "onboard")
               }
@@ -468,6 +478,17 @@ export default function Page() {
                   onSignedOut={() => setAuthProfile(null)}
                   onClose={() => setAccountOpen(false)}
                 />
+              </div>
+            </div>
+          )}
+
+          {howToOpen && (
+            <div className="lw-modal" onClick={() => setHowToOpen(false)}>
+              <div
+                className="lw-modalcard"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <HowToPlay lang={lang} onClose={() => setHowToOpen(false)} />
               </div>
             </div>
           )}

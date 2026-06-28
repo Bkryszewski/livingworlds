@@ -11,10 +11,12 @@ export default function Hero({
   lang,
   onLang,
   onEnter,
+  onHowTo,
 }: {
   lang: Lang;
   onLang: (l: Lang) => void;
   onEnter: () => void;
+  onHowTo?: () => void;
 }) {
   return (
     <div className="lw-view" style={{ justifyContent: "center" }}>
@@ -40,6 +42,25 @@ export default function Hero({
       <button className="lw-cta" onClick={onEnter}>
         {t(lang, "enter")}
       </button>
+
+      {onHowTo && (
+        <button
+          onClick={onHowTo}
+          style={{
+            marginTop: 14,
+            background: "transparent",
+            border: "none",
+            color: "var(--faint, #9aa0ad)",
+            textDecoration: "underline",
+            textUnderlineOffset: 3,
+            cursor: "pointer",
+            font: "inherit",
+            fontSize: 13.5,
+          }}
+        >
+          {lang === "es" ? "Cómo se juega" : "How to play"}
+        </button>
+      )}
     </div>
   );
 }
