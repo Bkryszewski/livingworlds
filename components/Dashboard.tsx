@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import type { Lang, World } from "@/lib/types";
 import { t } from "@/lib/i18n";
 import { deriveSkills, type PlayerProgress, type CutRecord } from "@/lib/progress";
@@ -32,6 +33,7 @@ export default function Dashboard({
   const skills = deriveSkills(progress);
   const playedIds = Object.keys(progress.worlds);
   const played = worlds.filter((w) => playedIds.includes(w.id));
+  const [openCut, setOpenCut] = useState<CutRecord | null>(null);
 
   function cutFileText(c: CutRecord): string {
     return c.script || "";
@@ -171,6 +173,13 @@ export default function Dashboard({
                   <div style={{ display: "flex", gap: 6 }}>
                     <button
                       className="lw-scriptbtn"
+                      onClick={() => setOpenCut(c)}
+                      disabled={!c.script}
+                    >
+                      ⤢ {lang === "es" ? "Leer" : "Read"}
+                    </button>
+                    <button
+                      className="lw-scriptbtn"
                       onClick={() => copyCut(c)}
                       disabled={!c.script}
                     >
@@ -198,6 +207,111 @@ export default function Dashboard({
       >
         {t(lang, "resetProgress")}
       </button>
+
+      {openCut && (
+        <div className="lw-modal" onClick={() => setOpenCut(null)}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(680px, 94vw)",
+              height: "min(86vh, 920px)",
+              display: "flex",
+              flexDirection: "column",
+              background: "#0a0d14",
+              border: "1px solid var(--line)",
+              borderRadius: 16,
+              overflow: "hidden",
+              boxShadow: "0 24px 80px rgba(0,0,0,.6)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                padding: "14px 16px",
+                borderBottom: "1px solid var(--line)",
+                flex: "0 0 auto",
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 600,
+                  fontSize: 15,
+                  color: "var(--ink, #f5f0df)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {worlds.find((w) => w.id === openCut.worldId)?.title ||
+                  openCut.worldId}
+              </div>
+              <button
+                onClick={() => setOpenCut(null)}
+                aria-label="Close"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--faint, #9aa0ad)",
+                  fontSize: 22,
+                  lineHeight: 1,
+                  cursor: "pointer",
+                  flex: "0 0 auto",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <pre
+              style={{
+                flex: "1 1 auto",
+                overflowY: "auto",
+                margin: 0,
+                padding: "20px",
+                background: "#0a0d14",
+                color: "#e8edf7",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                fontSize: 14.5,
+                lineHeight: 1.75,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}
+            >
+              {openCut.script || ""}
+            </pre>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                padding: "12px 16px",
+                borderTop: "1px solid var(--line)",
+                flex: "0 0 auto",
+              }}
+            >
+              <button className="lw-scriptbtn" onClick={() => copyCut(openCut)}>
+                {t(lang, "copyText")}
+              </button>
+              <button
+                className="lw-scriptbtn"
+                onClick={() => downloadCut(openCut)}
+              >
+                {t(lang, "downloadTxt")}
+              </button>
+              <button
+                className="lw-scriptbtn"
+                style={{ marginLeft: "auto" }}
+                onClick={() => setOpenCut(null)}
+              >
+                {lang === "es" ? "Cerrar" : "Close"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
