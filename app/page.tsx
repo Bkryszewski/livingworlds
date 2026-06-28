@@ -20,6 +20,7 @@ import Onboard from "@/components/Onboard";
 import Account from "@/components/Account";
 import HowToPlay from "@/components/HowToPlay";
 import { supabase, syncProfile, type LWProfile } from "@/lib/supabase";
+import { canPlayWorld, SAMCART_CHECKOUT } from "@/lib/access";
 import {
   loadProgress,
   recordPlaythrough,
@@ -86,11 +87,28 @@ export default function Page() {
   }
 
   function choosePass(id: string) {
-    setPass(id);
-    if (id === "festival") flash("Festival Pass — every world unlocked");
-    else if (id === "judge") flash("Judge's Credential — jury access granted");
-    else if (id === "studio") flash("Studio Pass — creator tools unlocked");
-    else flash("Guest Pass active");
+    if (id === "guest") {
+      setPass("guest");
+      flash(lang === "es" ? "Pase de Invitado activo" : "Guest Pass active");
+      return;
+    }
+    // Paid tiers are granted only by a real SamCart purchase (via the webhook
+    // that sets pass_tier on the profile). Here we just send them to checkout.
+    const url = SAMCART_CHECKOUT[id];
+    if (url) {
+      try {
+        window.open(url, "_blank", "noopener");
+      } catch {
+        /* popup blocked */
+      }
+      flash(lang === "es" ? "Abriendo el pago…" : "Opening checkout…");
+    } else {
+      flash(
+        lang === "es"
+          ? "El enlace de pago aún no está configurado."
+          : "Checkout link isn't set up yet."
+      );
+    }
   }
 
   useEffect(() => {
@@ -203,6 +221,18 @@ export default function Page() {
   }, [stage]);
 
   function openWorld(id: string) {
+    const w = getWorld(id);
+    if (w?.locked) return;
+    if (!canPlayWorld(pass, id)) {
+      setPassFrom(stage);
+      setStage("boxoffice");
+      flash(
+        lang === "es"
+          ? "Consigue el Pase de Festival para abrir este mundo"
+          : "Get the Festival Pass to open this world"
+      );
+      return;
+    }
     setWorldId(id);
     setRoleId(null);
     setStage("world");
@@ -281,13 +311,6 @@ export default function Page() {
                   </button>
                 )}
                 <button
-                  className="lw-aibadge"
-                  onClick={() => setHowToOpen(true)}
-                  aria-label={lang === "es" ? "Cómo se juega" : "How to play"}
-                >
-                  ?
-                </button>
-                <button
                   className={`lw-aibadge ${aiConfig.enabled ? "on" : ""}`}
                   onClick={() => setAiOpen(true)}
                   aria-label={t(lang, "aiEngine")}
@@ -310,6 +333,13 @@ export default function Page() {
                     : "Sign in"}
                 </button>
                 <LanguageToggle lang={lang} onChange={setLang} />
+                <button
+                  className="lw-aibadge"
+                  onClick={() => setHowToOpen(true)}
+                  aria-label={lang === "es" ? "Cómo se juega" : "How to play"}
+                >
+                  ?
+                </button>
               </div>
             </div>
           )}
@@ -356,6 +386,7 @@ export default function Page() {
             <WorldSelector
               worlds={WORLDS}
               lang={lang}
+              tier={pass}
               onOpen={openWorld}
               passLabel={passName(pass)}
               onBoxOffice={() => {

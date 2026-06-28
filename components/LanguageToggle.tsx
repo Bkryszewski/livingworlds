@@ -2,6 +2,8 @@
 import type { Lang } from "@/lib/types";
 import { LANGS } from "@/lib/i18n";
 
+const SHORT: Record<Lang, string> = { en: "ENG", es: "ESP" };
+
 export default function LanguageToggle({
   lang,
   onChange,
@@ -17,8 +19,9 @@ export default function LanguageToggle({
           className={lang === l.id ? "on" : ""}
           onClick={() => onChange(l.id)}
           aria-pressed={lang === l.id}
+          title={l.label}
         >
-          {l.label}
+          {SHORT[l.id] || l.label}
         </button>
       ))}
     </div>

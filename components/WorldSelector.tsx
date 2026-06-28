@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import type { Lang, World } from "@/lib/types";
 import { t } from "@/lib/i18n";
+import { canPlayWorld } from "@/lib/access";
 
 /**
  * WorldSelector — the Dimension Dial. A swipeable poster carousel of worlds
@@ -12,12 +13,14 @@ import { t } from "@/lib/i18n";
 export default function WorldSelector({
   worlds,
   lang,
+  tier,
   onOpen,
   passLabel,
   onBoxOffice,
 }: {
   worlds: World[];
   lang: Lang;
+  tier?: string;
   onOpen: (id: string) => void;
   passLabel?: string;
   onBoxOffice?: () => void;
@@ -30,12 +33,20 @@ export default function WorldSelector({
   const prev = () => setIdx((i) => Math.max(0, i - 1));
   const next = () => setIdx((i) => Math.min(worlds.length - 1, i + 1));
 
+  // Released world the current tier can't play yet → show a lock, route to passes.
+  const gatedFor = (w: World) => !w.locked && !canPlayWorld(tier, w.id);
+
   const go = (w: World, i: number) => {
     if (i !== idx) {
       setIdx(i);
       return;
     }
-    if (!w.locked) onOpen(w.id);
+    if (w.locked) return;
+    if (gatedFor(w)) {
+      onBoxOffice?.();
+      return;
+    }
+    onOpen(w.id);
   };
 
   return (
@@ -88,6 +99,11 @@ export default function WorldSelector({
                   <img src={w.poster} alt={w.title} />
                   <div className="covscrim" />
                   {w.locked && <div className="lockbadge">{t(lang, "soon")}</div>}
+                  {gatedFor(w) && (
+                    <div className="lockbadge">
+                      🔒 {lang === "es" ? "Festival" : "Festival"}
+                    </div>
+                  )}
                 </div>
                 <div className="wcbody">
                   <div className="wctop">
@@ -149,10 +165,21 @@ export default function WorldSelector({
         className="lw-cta"
         disabled={active.locked}
         style={{ background: active.accent }}
-        onClick={() => !active.locked && onOpen(active.id)}
+        onClick={() => {
+          if (active.locked) return;
+          if (gatedFor(active)) {
+            onBoxOffice?.();
+            return;
+          }
+          onOpen(active.id);
+        }}
       >
         {active.locked
           ? t(lang, "signalAcquiring")
+          : gatedFor(active)
+          ? lang === "es"
+            ? "🔒 Desbloquear con Festival Pass"
+            : "🔒 Unlock with Festival Pass"
           : `${t(lang, "enterPrefix")} ${active.title}`}
       </button>
 

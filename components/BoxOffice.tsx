@@ -40,8 +40,8 @@ export const PASSES: Pass[] = [
     id: "festival",
     icon: "🎬",
     name: "Festival Pass",
-    price: "$4.99",
-    priceNote: "all-access",
+    price: "$24.99/yr",
+    priceNote: "or $4.99/mo",
     accent: "#46C7E6",
     ribbon: "Most popular",
     tag: "All-access. Every screening, every reality.",
@@ -119,7 +119,7 @@ export default function BoxOffice({
             p.id === "guest"
               ? "Use Guest Pass"
               : p.id === "festival"
-              ? "Get Festival Pass · " + p.price
+              ? "Get Festival Pass"
               : p.id === "judge"
               ? "Claim Credential"
               : "Go Studio";
