@@ -25,7 +25,7 @@ export default function TermsPage() {
         ← Back to Living Worlds
       </a>
       <h1 style={{ ...h1, marginTop: 18 }}>Terms of Use</h1>
-      <p style={muted}>Effective date: [DATE] · Living Worlds is operated by Legacy Publishing Agency LLC.</p>
+      <p style={muted}>Effective date: June 28, 2026 · Living Worlds is operated by Legacy Publishing Agency LLC.</p>
 
       <h2 style={h2}>1. The works</h2>
       <p>
@@ -58,7 +58,17 @@ export default function TermsPage() {
         Access is offered as time-limited passes (for example, a 1-Year Pass or
         a 30-Day Pass). Each pass is a one-time purchase that grants access for
         the stated period and does not automatically renew. Access ends when the
-        pass period ends. [State your refund policy here.]
+        pass period ends.
+      </p>
+      <p>
+        Because a pass provides immediate digital access, all sales are final
+        and passes are non-refundable, except where a refund is required by
+        applicable law. If you believe you were charged in error or experienced
+        a technical problem that prevented access, contact us at{" "}
+        <a style={a} href="mailto:briank@legacypublishing.agency">
+          briank@legacypublishing.agency
+        </a>{" "}
+        and we will review your situation in good faith.
       </p>
 
       <h2 style={h2}>5. Your account</h2>
@@ -90,9 +100,23 @@ export default function TermsPage() {
 
       <h2 style={h2}>9. Disclaimers and liability</h2>
       <p>
-        The app is provided “as is,” without warranties of any kind. [Standard
-        limitation-of-liability and indemnification language to be finalized by
-        counsel.]
+        The app and all content are provided “as is” and “as available,” without
+        warranties of any kind, whether express or implied, including any implied
+        warranties of merchantability, fitness for a particular purpose, and
+        non-infringement. We do not warrant that the app will be uninterrupted,
+        error-free, or secure.
+      </p>
+      <p>
+        To the fullest extent permitted by law, Legacy Publishing Agency LLC will
+        not be liable for any indirect, incidental, special, consequential, or
+        punitive damages, or for any loss of data, profits, or goodwill, arising
+        out of or relating to your use of the app. Our total liability for any
+        claim relating to the app will not exceed the amount you paid us in the
+        twelve months before the claim. You agree to indemnify and hold harmless
+        Legacy Publishing Agency LLC and its owners, divisions, and affiliates
+        from claims arising out of your misuse of the app or violation of these
+        Terms. Some jurisdictions do not allow certain limitations, so some of
+        the above may not apply to you.
       </p>
 
       <h2 style={h2}>10. Governing law</h2>
@@ -101,7 +125,7 @@ export default function TermsPage() {
       <h2 style={h2}>11. Contact</h2>
       <p>
         Legacy Publishing Agency LLC ·{" "}
-        <a style={a} href="mailto:[CONTACT EMAIL]">[CONTACT EMAIL]</a>
+        <a style={a} href="mailto:briank@legacypublishing.agency">support@legacypublishing.agency</a>
       </p>
 
       <p style={{ ...muted, marginTop: 32 }}>

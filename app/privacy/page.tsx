@@ -33,7 +33,7 @@ export default function PrivacyPage() {
         ← Back to Living Worlds
       </a>
       <h1 style={{ ...h1, marginTop: 18 }}>Privacy Policy</h1>
-      <p style={muted}>Effective date: [DATE] · Living Worlds is operated by Legacy Publishing Agency LLC.</p>
+      <p style={muted}>Effective date: June 28, 2026 · Living Worlds is operated by Legacy Publishing Agency LLC.</p>
 
       <h2 style={h2}>1. Information we collect</h2>
       <p>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
       <p>
         We keep your information while your account is active. You may request
         access to, correction of, or deletion of your data at any time by
-        emailing us at <a style={a} href="mailto:[CONTACT EMAIL]">[CONTACT EMAIL]</a>.
+        emailing us at <a style={a} href="mailto:briank@legacypublishing.agency">briank@legacypublishing.agency</a>.
         Deleting your account removes your profile and associated data.
       </p>
 
@@ -104,7 +104,7 @@ export default function PrivacyPage() {
       <h2 style={h2}>9. Contact</h2>
       <p>
         Legacy Publishing Agency LLC ·{" "}
-        <a style={a} href="mailto:[CONTACT EMAIL]">[CONTACT EMAIL]</a>
+        <a style={a} href="mailto:briank@legacypublishing.agency">support@legacypublishing.agency</a>
       </p>
 
       <p style={{ ...muted, marginTop: 32 }}>
