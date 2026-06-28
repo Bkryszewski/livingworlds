@@ -66,7 +66,7 @@ export default function TermsPage() {
         applicable law. If you believe you were charged in error or experienced
         a technical problem that prevented access, contact us at{" "}
         <a style={a} href="mailto:briank@legacypublishing.agency">
-          briank@legacypublishing.agency
+          support@legacypublishing.agency
         </a>{" "}
         and we will review your situation in good faith.
       </p>

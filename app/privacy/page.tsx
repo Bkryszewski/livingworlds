@@ -78,7 +78,7 @@ export default function PrivacyPage() {
       <p>
         We keep your information while your account is active. You may request
         access to, correction of, or deletion of your data at any time by
-        emailing us at <a style={a} href="mailto:briank@legacypublishing.agency">briank@legacypublishing.agency</a>.
+        emailing us at <a style={a} href="mailto:briank@legacypublishing.agency">support@legacypublishing.agency</a>.
         Deleting your account removes your profile and associated data.
       </p>
 
