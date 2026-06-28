@@ -17,6 +17,8 @@ import AIEngine from "@/components/AIEngine";
 import BoxOffice, { passName } from "@/components/BoxOffice";
 import Dashboard from "@/components/Dashboard";
 import Onboard from "@/components/Onboard";
+import Account from "@/components/Account";
+import { supabase, syncProfile, type LWProfile } from "@/lib/supabase";
 import {
   loadProgress,
   recordPlaythrough,
@@ -73,6 +75,8 @@ export default function Page() {
   const [progress, setProgress] = useState<PlayerProgress>(EMPTY_PROGRESS);
   const [dashFrom, setDashFrom] = useState<Stage>("selector");
   const [toast, setToast] = useState("");
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [authProfile, setAuthProfile] = useState<LWProfile | null>(null);
 
   function flash(msg: string) {
     setToast(msg);
@@ -111,6 +115,46 @@ export default function Page() {
       /* ignore */
     }
   }
+
+  // Apply a signed-in Supabase profile to the running app: personalize by
+  // name, follow their saved language, and adopt their pass tier (set by the
+  // SamCart webhook in Phase 2; "guest" for everyone during the free launch).
+  function applyProfile(p: LWProfile) {
+    setAuthProfile(p);
+    setProfile((cur) => {
+      const next = { name: p.name || cur.name, email: p.email || cur.email };
+      try {
+        window.localStorage.setItem(PROFILE_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+    if (p.language === "en" || p.language === "es") setLang(p.language);
+    setPass(p.pass_tier || "guest");
+  }
+
+  // Restore any existing session on load, sync the profile, and react to
+  // sign-in / sign-out. No-ops gracefully if auth env vars aren't present.
+  useEffect(() => {
+    const sb = supabase();
+    if (!sb) return;
+    let active = true;
+    const refresh = async () => {
+      const prof = await syncProfile();
+      if (active && prof) applyProfile(prof);
+    };
+    refresh();
+    const { data: sub } = sb.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") refresh();
+      if (event === "SIGNED_OUT" && active) setAuthProfile(null);
+    });
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function updateAi(cfg: AIConfig) {
     setAiConfig(cfg);
@@ -241,6 +285,20 @@ export default function Page() {
                 >
                   {aiConfig.enabled ? "● " : "○ "}
                   {t(lang, "aiEngineShort")}
+                </button>
+                <button
+                  className={`lw-aibadge ${authProfile ? "on" : ""}`}
+                  onClick={() => setAccountOpen(true)}
+                  aria-label={lang === "es" ? "Cuenta" : "Account"}
+                >
+                  {authProfile
+                    ? `◢ ${
+                        (authProfile.name || "").split(" ")[0] ||
+                        (lang === "es" ? "Cuenta" : "Account")
+                      }`
+                    : lang === "es"
+                    ? "Entrar"
+                    : "Sign in"}
                 </button>
                 <LanguageToggle lang={lang} onChange={setLang} />
               </div>
@@ -393,6 +451,22 @@ export default function Page() {
                   config={aiConfig}
                   onChange={updateAi}
                   onClose={() => setAiOpen(false)}
+                />
+              </div>
+            </div>
+          )}
+
+          {accountOpen && (
+            <div className="lw-modal" onClick={() => setAccountOpen(false)}>
+              <div
+                className="lw-modalcard"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Account
+                  lang={lang}
+                  profile={authProfile}
+                  onSignedOut={() => setAuthProfile(null)}
+                  onClose={() => setAccountOpen(false)}
                 />
               </div>
             </div>
