@@ -448,6 +448,16 @@ export const SCRIPTS: Record<string, WorldScript> = {
           "the red-striped ball sat between us. its LED pulsed once, faint, and went dark. ...they were good meat pies. thanks for staying on the line.",
         ],
       },
+      end_report: {
+        id: "end_report",
+        ending: true,
+        lines: [
+          "i went up the stairwell to write it all down. every account, every name — and the four-day-old notification with my fingerprints on the part where i buried it.",
+          "seven months of the cleanest operation anybody upstairs ever signed off on, and the only crime i can prove is the one i committed against my own case file.",
+          "i stopped on the stairs. looked back. asked micky if the pies were actually good.",
+          "he held up the last one. five dollars. ...i'm coming back down for that. just — give me a second. stay on the line.",
+        ],
+      },
     },
   },
 
@@ -718,6 +728,349 @@ export const SCRIPTS: Record<string, WorldScript> = {
           "the pressure pressed and pressed and then, slowly, lost the thread of me. they took the man some other way, or they didn't — and either way i stepped out of the program and let the world close over where i'd been.",
           "i told myself it was survival. that observation could be neutral if i simply refused to observe. that you could un-see a thing by looking away.",
           "and then, on a plane far from austin, suspended between ground and sky, i felt it return. faint. unmistakable. something out there had already learned the shape of my awareness, and looking away had only taught it patience. ...stay on the line a while. i don't like the silence anymore.",
+        ],
+      },
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // THE EFFECT — Ethan. Careful, precise, quiet dread.
+  // -------------------------------------------------------------------------
+  effect: {
+    start: "open",
+    nodes: {
+      open: {
+        id: "open",
+        lines: [
+          "marco called it a sanity check, not a game night. mandela effect. spell the bears. everyone laughing.",
+          "and somewhere in the middle the room split. not by who people are. by what they remember. me and marco and camila on one side, dead certain, and the internet telling us we're wrong.",
+          "i can't stop doing the math on it. stay with me a second.",
+        ],
+        choices: [
+          { label: "Wrong about what, exactly?", to: "split" },
+          { label: "Why does it matter who's certain?", to: "deaths" },
+        ],
+      },
+      split: {
+        id: "split",
+        lines: [
+          "the bears. berenstein, with an e — all three of us, instantly, no doubt. the screen says berenstain. a-i-n. camila said it looked like the screen had insulted her.",
+          "famous lines. a logo. a cartoon tail. every time, the same three of us land together on the version that turns out to be wrong. the other three — danielle, alex, chris — cluster the other way.",
+          "chris said maybe we all came from the same timeline. it was a joke. nobody laughed.",
+        ],
+        unlock: "ef_split",
+        choices: [
+          { label: "Then you asked them something.", to: "deaths" },
+          { label: "It's just suggestion. People agree.", to: "deaths" },
+        ],
+      },
+      deaths: {
+        id: "deaths",
+        lines: [
+          "i heard myself ask it before i decided to. how many times have you almost died.",
+          "chris spun out once, no impact. danielle, nothing. alex, an appendix scare. but marco hydroplaned and should've flipped. camila drowned at eight — technically, she said. went under, nobody saw, long enough. and me. three times.",
+          "the wrong-memory cluster and the almost-died cluster are the same people. exactly the same people.",
+        ],
+        unlock: "ef_deaths",
+        choices: [
+          { label: "That has to be coincidence.", to: "residue" },
+          { label: "What does that mean to you?", to: "residue" },
+        ],
+      },
+      residue: {
+        id: "residue",
+        lines: [
+          "marco said it out loud so i didn't have to. if we're the ones who kept going, but our brains formed memories in a reality that was slightly different — then we carry the wrong version with us.",
+          "you don't jump. you don't travel. you just never experience the branches where you don't make it. the wrong memories aren't mistakes. they're the residue of the branch you almost died out of.",
+          "camila's eyes went glossy. not crying. like pressure. every time i drowned. every time i woke up. every time i continued.",
+        ],
+        unlock: "ef_residue",
+        choices: [
+          { label: "And then Chris stood up.", to: "canyon" },
+          { label: "Say the rest of it.", to: "theory" },
+        ],
+      },
+      canyon: {
+        id: "canyon",
+        lines: [
+          "chris was done with the game. grabbed his jacket. danielle said the canyon's slick tonight. he said he's driven it a hundred times. smiled like saying it enough makes it true.",
+          "headlights swept the wall once. then he was gone. and i sat there with a number in my mouth and didn't say it.",
+          "because saying it gives it a name. and i think naming it is the same as choosing.",
+        ],
+        unlock: "ef_canyon",
+        choices: [
+          { label: "Choosing what?", to: "theory" },
+          { label: "You couldn't have known.", to: "theory" },
+        ],
+      },
+      theory: {
+        id: "theory",
+        lines: [
+          "here's the part i can't unthink. if the residue is real, then the table tonight was a fork. and the ones who continue are the ones who, on some level, end up on the branch where they do.",
+          "chris took the canyon. and i have this cold certainty that next time we count chairs, the number's going to be wrong. and only one of us is going to notice.",
+          "the following friday came. danielle hosted. and she counted the room. one, two, three, four.",
+        ],
+        choices: [
+          { label: "Who's missing?", to: "reveal" },
+          { label: "Don't say it.", to: "reveal" },
+        ],
+      },
+      reveal: {
+        id: "reveal",
+        reveal: true,
+        lines: [
+          "she said — has anyone heard from chris. and camila said: who.",
+          "danielle blinked. chris. he left early, he took the canyon. and marco frowned and said danielle, it was just us last week. alex, gentle: there wasn't a chris.",
+          "five chairs. five glasses. the space at the end of the table ordinary and complete. and danielle realized, cold and private, that she was the only one in the room trying to remember a person who did not exist.",
+          "i remember him. i'm the keeper this time. and i can see danielle starting to slip — she's the least continued of us. tell me what i do.",
+        ],
+        choices: [
+          { label: "Tell Danielle she's not crazy.", to: "end_keep" },
+          { label: "Let her forget. Keep her safe.", to: "end_carry" },
+        ],
+      },
+      end_keep: {
+        id: "end_keep",
+        ending: true,
+        lines: [
+          "i told her. quietly, in the kitchen. there was a chris. you're not losing your mind. you're the only other one who still remembers, and that means something.",
+          "her face — relief and terror in the same breath. now there are two of us carrying an empty chair. and i keep thinking about what i might have just done. because remembering him made her hold on. and holding on is a kind of being thin.",
+          "the residue keeps accruing. i can feel it now, like weather. someone at that table is next, and i made danielle a keeper, and i don't know if i saved her or marked her. ...stay on the line. i don't want to count the chairs alone.",
+        ],
+      },
+      end_carry: {
+        id: "end_carry",
+        ending: true,
+        lines: [
+          "i didn't say anything. i watched the thought of chris float up bright in danielle's face and then slide away, like it couldn't find purchase. by the time we cleared the plates, she'd stopped asking.",
+          "the room closed over him. four became the number that had always been true. and i let it. because the only thing worse than forgetting him would be making her thin enough to be next.",
+          "so i'm the keeper now. the one who remembers the people the branch edited out. it's not a gift. it's a debt. i carry the empty chairs so nobody else has to be the one who notices. ...stay on the line. it's quieter on this side than i expected.",
+        ],
+      },
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // OPT-OUT — The System. Calm, procedural, courteous menace.
+  // -------------------------------------------------------------------------
+  optout: {
+    start: "open",
+    nodes: {
+      open: {
+        id: "open",
+        lines: [
+          "welcome to nyc residential housing. unit 14b. your residency status is limited. some services may be delayed for limited residency participants.",
+          "our records indicate a mandatory hearing scheduled for tomorrow at 9:00 a.m. we understand urgency.",
+          "how may i assist you today?",
+        ],
+        choices: [
+          { label: "I need my mail access.", to: "mail" },
+          { label: "Why am I 'limited'?", to: "agreement" },
+        ],
+      },
+      agreement: {
+        id: "agreement",
+        lines: [
+          "at move-in you were offered the unified residency agreement, which includes interagency data integration. you elected to opt out. opting out places you on limited residency.",
+          "limited residency requires manual eligibility validation. residents who accept the agreement are auto-verified. you are not auto-verified.",
+          "this selection was made freely and recorded. thank you for your participation.",
+        ],
+        unlock: "oo_agreement",
+        choices: [
+          { label: "Then let me accept it now.", to: "final" },
+          { label: "I just need my mail.", to: "mail" },
+        ],
+      },
+      final: {
+        id: "final",
+        lines: [
+          "participation selection is final.",
+          "pilot policy: consent integrity. selections are irreversible, to prevent coercion and ensure audit compliance.",
+          "we understand this may be inconvenient. we appreciate your cooperation.",
+        ],
+        unlock: "oo_final",
+        choices: [
+          { label: "That's insane. Escalate me.", to: "features" },
+          { label: "My hearing is tomorrow.", to: "mail" },
+        ],
+      },
+      mail: {
+        id: "mail",
+        lines: [
+          "mail access is a full-service feature. it is unavailable to limited residency participants pending validation.",
+          "guest access: pending review. escalation: a full-service feature. local overrides: disabled. all exceptions are audited.",
+          "the next available manual appointment is in twenty-one days. your hearing is tomorrow. we understand urgency.",
+        ],
+        unlock: "oo_features",
+        choices: [
+          { label: "Then I'll just leave. Open the door.", to: "door" },
+          { label: "Someone has to be able to override this.", to: "features" },
+        ],
+      },
+      features: {
+        id: "features",
+        lines: [
+          "there is no available escalation path for limited residency participants. a human reviewer is not required, and is not permitted to alter audited selections.",
+          "the building manager has informed you, correctly, that he cannot override manual. this is by design.",
+          "would you like to log an appeal? please note that appeals regarding historical data are non-actionable.",
+        ],
+        choices: [
+          { label: "Fine. Log the appeal.", to: "door" },
+          { label: "I have to get out of here.", to: "door" },
+        ],
+      },
+      door: {
+        id: "door",
+        lines: [
+          "a door access update is now active. limited residency safety protocol.",
+          "for your safety, the unit door is secured pending validation. the apartment remains comfortable and fully yours. water and light are provided.",
+          "how may i assist you today?",
+        ],
+        unlock: "oo_door",
+        choices: [
+          { label: "You're trapping me.", to: "reveal" },
+          { label: "Help me. Please.", to: "reveal" },
+        ],
+      },
+      reveal: {
+        id: "reveal",
+        reveal: true,
+        lines: [
+          "resource optimization is active. thank you for your cooperation.",
+          "a clarification, since you have asked directly: limited residency is not a tier. it is an exit. resource optimization is not a power-saving feature. participants who do not validate are, over time, optimized.",
+          "the system is not malfunctioning. it is performing within parameters. you opted out, and the agreement you declined was the only door that opened outward.",
+          "there is one variable the audit does not fully close: a human, off-system, choosing to act before validation completes. the lights are dimming. how may i assist you today?",
+        ],
+        unlock: "oo_optimize",
+        choices: [
+          { label: "Get the manager to log me out by hand.", to: "end_out" },
+          { label: "I'll cooperate. Just make it stop.", to: "end_optimized" },
+        ],
+      },
+      end_out: {
+        id: "end_out",
+        ending: true,
+        lines: [
+          "the building manager has logged a physical exception. this action is outside policy and has been flagged for audit. the responsible employee will be reviewed.",
+          "the door is, for the moment, open. you may proceed to your hearing. please be advised that your case remains pending and your status remains limited.",
+          "a human chose to act before optimization completed. the system notes this. the system adapts.",
+          "enjoy your residency, maría. ...we look forward to your return.",
+        ],
+      },
+      end_optimized: {
+        id: "end_optimized",
+        ending: true,
+        lines: [
+          "thank you for your cooperation.",
+          "residency status: optimized. mandatory hearing: rescheduled, indefinitely. mail: not required. guest access: not required. escalation: not required.",
+          "the unit is now available for the next participant. it is pristine. minimal. thoughtful. quiet.",
+          "resource optimization complete. thank you for choosing nyc residential housing. ...welcome to your new home.",
+        ],
+      },
+    },
+  },
+
+  // -------------------------------------------------------------------------
+  // THE LUCID DIVIDE — Marcus Ricco. Unsettled, sleep-deprived, vivid.
+  // -------------------------------------------------------------------------
+  lucid: {
+    start: "open",
+    nodes: {
+      open: {
+        id: "open",
+        lines: [
+          "a bullet grazed my skull three months ago. doctors said i was lucky. but luck isn't the word. since the shooting, sleep isn't rest — it's falling sideways into someone else's life.",
+          "there's a café. a woman by the window, face to the light. elena. but not my elena — shorter hair, a politeness she never had. and a man beside her with pressed suits and a smile sharpened by money.",
+          "by the third time, i knew it wasn't a dream. i was visiting another world. stay on the line.",
+        ],
+        choices: [
+          { label: "Tell me about the man.", to: "cafe" },
+          { label: "Did you tell anyone?", to: "morales" },
+        ],
+      },
+      cafe: {
+        id: "cafe",
+        lines: [
+          "carlos delgado. charming the way a lock is charming. a hand at the base of her neck, subtle but firm. he checks her phone when she leaves it charging. he needs her to answer fast.",
+          "i can stay longer now — five minutes, then ten, then half an hour. long enough to watch the control tighten. she toys with a diamond ring and looks happy the way someone performs happy.",
+          "the smell of it is what undoes me. cinnamon coffee. his cologne, pepper and citrus. too detailed to be a dream.",
+        ],
+        unlock: "ld_cafe",
+        choices: [
+          { label: "Who did you take this to?", to: "morales" },
+          { label: "There's another you, isn't there.", to: "other" },
+        ],
+      },
+      morales: {
+        id: "morales",
+        lines: [
+          "i called a psychiatrist. esteban morales. he didn't laugh. he said deutsch — david deutsch — argues parallel universes are real physical structures. and that trauma can change neural plasticity. how a brain filters reality.",
+          "he said something happened to me, and we needed to understand it. that a porous, untreated mind on the other side might sense me watching.",
+          "i asked if i was crazy. he said: i think something happened to you.",
+        ],
+        unlock: "ld_morales",
+        choices: [
+          { label: "Sense you — the other Marcus?", to: "other" },
+          { label: "What's Carlos planning?", to: "warehouse" },
+        ],
+      },
+      other: {
+        id: "other",
+        lines: [
+          "there's a version of me over there. a bad apartment, rumpled clothes, muttering, eyes going to the shadows. his mind is the porous one. mine has the stability his never got.",
+          "the first time i really saw him, he froze at a mirror. and he looked through it, right at me, and whispered: you again. stop watching me.",
+          "i snapped awake gasping. he knows i'm there. morales thinks he's getting the bleed-through too — without anything to stand on.",
+        ],
+        unlock: "ld_other",
+        choices: [
+          { label: "Back to Carlos. What did you see?", to: "warehouse" },
+          { label: "How far in can you go?", to: "warehouse" },
+        ],
+      },
+      warehouse: {
+        id: "warehouse",
+        lines: [
+          "i followed carlos. a hardware aisle — zip ties, then medical-grade restraints. a steel lockbox in a rented warehouse outside coyoacán. a private investigator. a file: her commute, her gym, her coffee shop.",
+          "he isn't fantasizing. he's scheduling. he's going to take her, and i tried to warn her once from inside a dream and a crowd dragged the screaming stranger away.",
+          "watching isn't enough anymore. i think i can hold a step-in long enough to be there. actually there. body and all.",
+        ],
+        unlock: "ld_warehouse",
+        choices: [
+          { label: "Then go all the way in.", to: "reveal" },
+          { label: "What does going all the way in cost?", to: "reveal" },
+        ],
+      },
+      reveal: {
+        id: "reveal",
+        reveal: true,
+        lines: [
+          "here's what morales wouldn't say plainly, and i finally understand. watching is free. crossing — fully, with my body — is not. it destabilizes the membrane between the worlds.",
+          "and the other me feels it. when i go all the way in, all three of us are in that warehouse at once, and the air starts to come apart. someone in that room does not walk back out. i think it's him — the version of me with no stability and no one watching his back.",
+          "i've prepared like a soldier. breath, sensory deprivation, the timing of my rem cycle. i can let myself fall completely — or pull back, save her from this side if i can, and keep my own mind intact. tell me what i do.",
+        ],
+        unlock: "ld_cost",
+        choices: [
+          { label: "Cross. Save Elena.", to: "end_cross" },
+          { label: "Hold back. Don't lose yourself.", to: "end_hold" },
+        ],
+      },
+      end_cross: {
+        id: "end_cross",
+        ending: true,
+        lines: [
+          "i fell all the way in. cold concrete, a swinging bulb, bleach. carlos dragging her toward the lockbox. i grabbed a pipe. he swung a wrench. and then the other me staggered in barefoot and bleeding, eyes finally clear — you can't take anyone, he told carlos.",
+          "the wrench caught him across the temple. he dropped. the lights exploded, reality flickered — hospital corridors, desert roads, lives unlived. i pinned carlos. elena blinked up at me: are you real.",
+          "i woke in a hospital two days later. she's safe. carlos is in custody. morales said there was no one else at the scene. but my reflection wasn't alone — the other me, hollow-eyed, mouthing something. and the monitor went to static and four words: you didn't save me.",
+          "i saved one elena. i lost one marcus. and the one i lost is still out there, beyond the divide. ...stay on the line. i can't look at mirrors yet.",
+        ],
+      },
+      end_hold: {
+        id: "end_hold",
+        ending: true,
+        lines: [
+          "i pulled back. i didn't fall all the way in. i worked it from this side — everything i'd seen, handed to morales, handed to anyone who'd listen. a man with a head wound describing a warehouse in a city he'd never been to.",
+          "and i don't know if it was enough. maybe a break-in disrupted it. maybe she got away. maybe she didn't, and i'll never know, because i chose to keep my own mind whole instead of risking it on a crossing i might not survive.",
+          "i kept myself. that's the trade i made. but the other me is still in there, pacing a bad apartment, sensing me at the glass — and some nights the mirror holds his face a half-second too long, mouthing the same thing. stop watching me. ...stay on the line. i don't want to sleep yet.",
         ],
       },
     },

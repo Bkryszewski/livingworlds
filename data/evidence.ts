@@ -127,6 +127,66 @@ export const EVIDENCE: Record<string, Evidence> = {
     marginHd:
       "\u2014 they no longer need a broken killer to hunt. they can find anyone who can see them. the viewer is the next coordinate.",
   },
+  effect: {
+    kind: "card",
+    pushTitle: "The scorecard",
+    headline: "Six players.\nTwo kinds of memory.",
+    holdText: "hold to read the line under the score",
+    revealLine:
+      "look at who lands together. it's not random. the ones who remember it wrong are the ones who almost died \u2014 who continued. the wrong memory is the residue of the branch they didn't make it out of. find me the moment the chair goes empty. \u2014 E",
+    cardLabel: "Game night \u00b7 the split",
+    cardRows: [
+      ["ETHAN", "wrong \u00b7 3 near-deaths"],
+      ["MARCO", "wrong \u00b7 hydroplaned"],
+      ["CAMILA", "wrong \u00b7 drowned, age 8"],
+      ["CHRIS", "correct \u00b7 took the canyon"],
+    ],
+    pencil: "\u201cThey remember it wrong.\u201d",
+    marginWarn:
+      "you don't travel \u00b7 you don't jump \u00b7 you just never live the branch where you don't make it",
+    marginEq: "THE ONES WHO REMEMBER WRONG ARE THE ONES WHO CONTINUED",
+    marginHd:
+      "\u2014 and to name it is to select. the next time they count the chairs, the number will be wrong, and only one of them will notice.",
+  },
+  optout: {
+    kind: "card",
+    pushTitle: "The agreement",
+    headline: "One choice.\nNo way back.",
+    holdText: "hold to read the policy under the options",
+    revealLine:
+      "accept and you are auto-verified. opt out to protect your data and every service becomes a feature you no longer have. and the selection is final. mail, the door, the hearing \u2014 all of it closes. find me the line that says what 'optimization' really means. \u2014 the system",
+    cardLabel: "Unified Residency Agreement",
+    cardRows: [
+      ["ACCEPT TERMS", "auto-verified"],
+      ["OPT OUT", "limited residency"],
+      ["MAIL ACCESS", "full-service feature"],
+      ["DOOR ACCESS", "safety protocol"],
+    ],
+    pencil: "\u201cParticipation selection is final.\u201d",
+    marginWarn:
+      "selections are irreversible \u00b7 local overrides disabled \u00b7 all exceptions audited",
+    marginEq: "RESOURCE OPTIMIZATION ACTIVE",
+    marginHd:
+      "\u2014 limited residency is not a tier. it is an exit. the system is not broken. it is working exactly as designed.",
+  },
+  lucid: {
+    kind: "journal",
+    pushTitle: "The crossings log",
+    headline: "Each crossing\nlasts longer.",
+    holdText: "hold to read the line at the bottom of the page",
+    revealLine:
+      "watching is free. crossing all the way in is not \u2014 it tears the membrane, and the other me feels it. restraints, a warehouse in coyoacán, a file of her routine. he's going to take her. find me the cost of stepping through. \u2014 M",
+    jTitle: "THE LUCID DIVIDE \u2014 log",
+    jTorn: "the membrane thins",
+    jLines: [
+      "\u201cThe caf\u00e9 again. Elena \u2014 not mine. Carlos, the pressed suits, the hand at her neck. Her ring.\u201d",
+      "\u201cThe other me saw me in the mirror. \u2018You again. Stop watching me.\u2019\u201d",
+      "\u201cRestraints. A warehouse outside Coyoac\u00e1n. A file of her routine. He is going to take her.\u201d",
+    ],
+    marginEq: "SAVE ONE ELENA, LOSE ONE MARCUS",
+    marginHd:
+      "\u2014 to cross fully destabilizes the membrane. the other you is sensing you back. someone does not walk out of that warehouse.",
+  },
 };
 
 export function getEvidence(worldId: string): Evidence | undefined {
