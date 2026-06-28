@@ -27,8 +27,8 @@ export const FREE_WORLD_IDS = ["perdido"];
 // blank, its button tells the person checkout isn't ready (never grants free).
 // ─────────────────────────────────────────────────────────────────────────
 export const SAMCART_CHECKOUT: Record<string, string> = {
-  festival_year: "",
-  festival_30day: "",
+  festival_year: "https://mylegacy.mysamcart.com/checkout/festival-1year-pass",
+  festival_30day: "https://mylegacy.mysamcart.com/checkout/festival-30-day-pass",
   judge: "",
   studio: "",
 };
