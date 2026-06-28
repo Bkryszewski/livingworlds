@@ -61,6 +61,28 @@ export default function Hero({
           {lang === "es" ? "Cómo se juega" : "How to play"}
         </button>
       )}
+
+      <div
+        style={{
+          marginTop: 16,
+          fontSize: 12,
+          color: "var(--faint, #9aa0ad)",
+        }}
+      >
+        <a
+          href="/terms"
+          style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 3 }}
+        >
+          {lang === "es" ? "Términos" : "Terms"}
+        </a>
+        {"  ·  "}
+        <a
+          href="/privacy"
+          style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 3 }}
+        >
+          {lang === "es" ? "Privacidad" : "Privacy"}
+        </a>
+      </div>
     </div>
   );
 }

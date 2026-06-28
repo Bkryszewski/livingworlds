@@ -19,6 +19,7 @@ export interface Pass {
   ribbon?: string;
   tag: string;
   perks: string[];
+  comingSoon?: boolean;
 }
 
 export const PASSES: Pass[] = [
@@ -56,10 +57,11 @@ export const PASSES: Pass[] = [
     id: "judge",
     icon: "🏆",
     name: "Judge's Credential",
-    price: "Earned or premium",
+    price: "Coming soon",
     priceNote: "sit on the jury",
     accent: "#E6A85C",
     tag: "Sit on the jury. Score the cuts.",
+    comingSoon: true,
     perks: [
       "Everything in the Festival Pass",
       "Judge mode — rate & rank playthroughs",
@@ -71,10 +73,11 @@ export const PASSES: Pass[] = [
     id: "studio",
     icon: "🎥",
     name: "Studio Pass",
-    price: "Creator tier",
+    price: "Coming soon",
     priceNote: "run the studio",
     accent: "#C77DFF",
     tag: "Bring your own IP. Run the studio.",
+    comingSoon: true,
     perks: [
       "Everything in the Judge's Credential",
       "Upload your screenplay or story",
@@ -127,7 +130,10 @@ export default function BoxOffice({
             <div
               key={p.id}
               className={"lw-pass" + (isCurrent ? " current" : "")}
-              style={{ ["--accent" as string]: p.accent }}
+              style={{
+                ["--accent" as string]: p.accent,
+                opacity: p.comingSoon ? 0.55 : 1,
+              }}
             >
               {p.ribbon && <div className="lw-ribbon">{p.ribbon}</div>}
               <div className="lw-passfoil" />
@@ -151,7 +157,11 @@ export default function BoxOffice({
                   </div>
                 ))}
               </div>
-              {isCurrent ? (
+              {p.comingSoon ? (
+                <button className="lw-passcta" disabled>
+                  {lang === "es" ? "Próximamente" : "Coming soon"}
+                </button>
+              ) : isCurrent ? (
                 <button className="lw-passcta current" disabled>
                   ✦ {t(lang, "yourPass")}
                 </button>
