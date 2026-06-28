@@ -195,10 +195,7 @@ export default function BoxOffice({
           );
         })}
       </div>
-
-      <p className="lw-note" style={{ textAlign: "center" }}>
-        {t(lang, "boxOfficeNote")}
-      </p>
+      <div style={{ height: 20 }} />
     </div>
   );
 }

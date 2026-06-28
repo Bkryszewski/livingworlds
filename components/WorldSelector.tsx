@@ -183,10 +183,7 @@ export default function WorldSelector({
           : `${t(lang, "enterPrefix")} ${active.title}`}
       </button>
 
-      <p className="lw-note" style={{ marginTop: 14 }}>
-        {t(lang, "dialFooter")}
-      </p>
-      <div style={{ height: 18 }} />
+      <div style={{ height: 24 }} />
     </div>
   );
 }
