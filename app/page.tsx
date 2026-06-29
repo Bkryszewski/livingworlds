@@ -485,7 +485,21 @@ export default function Page() {
             <WorldDetail
               lang={lang}
               worldId={world.id}
-              onContinue={() => setStage("role")}
+              initial={profile}
+              signedIn={!!authProfile}
+              onContinue={(p) => {
+                if (p.name || p.email) saveProfile(p);
+                // Pure lead capture: store every guest email at choose-role.
+                if (p.email && !authProfile) {
+                  void saveLead({
+                    email: p.email,
+                    name: p.name,
+                    language: lang,
+                    source: world.id,
+                  });
+                }
+                setStage("role");
+              }}
             />
           )}
 
@@ -495,21 +509,7 @@ export default function Page() {
               lang={lang}
               selected={roleId}
               onSelect={setRoleId}
-              initial={profile}
-              signedIn={!!authProfile}
-              onContinue={(p) => {
-                if (p.name || p.email) saveProfile(p);
-                // Capture guest leads (signed-in users we already have).
-                if (p.email && !authProfile) {
-                  void saveLead({
-                    email: p.email,
-                    name: p.name,
-                    language: lang,
-                    source: world.id,
-                  });
-                }
-                setStage("assistance");
-              }}
+              onContinue={() => setStage("assistance")}
             />
           )}
 
@@ -700,19 +700,39 @@ export default function Page() {
   );
 }
 
-/** Inline world-detail view: poster, synopsis, trailer placeholder, continue. */
+/** Inline world-detail view: poster, synopsis, lead capture, continue. */
 function WorldDetail({
   worldId,
   lang,
+  initial,
+  signedIn,
   onContinue,
 }: {
   worldId: string;
   lang: Lang;
-  onContinue: () => void;
+  initial: { name: string; email: string };
+  signedIn: boolean;
+  onContinue: (p: { name: string; email: string }) => void;
 }) {
   const world = getWorld(worldId)!;
   const copy = world.copy[lang];
   const [trailerOpen, setTrailerOpen] = useState(false);
+  const [name, setName] = useState(initial.name || "");
+  const [email, setEmail] = useState(initial.email || "");
+  // Lead capture: ask every guest for an email here (pre-filled if we have it).
+  // Signed-in users already gave us their email, so they skip it.
+  const needCapture = !signedIn;
+  const emailOk = /\S+@\S+\.\S+/.test(email.trim());
+  const canContinue = needCapture ? emailOk : true;
+
+  function go() {
+    if (!canContinue) return;
+    onContinue(
+      needCapture
+        ? { name: name.trim(), email: email.trim() }
+        : { name: initial.name, email: initial.email }
+    );
+  }
   const embed = toEmbedUrl(world.trailer);
   const isFile = isVideoFile(world.trailer);
   return (
@@ -776,10 +796,50 @@ function WorldDetail({
       <div className="lw-flabel">{t(lang, "synopsis")}</div>
       <p className="lw-sub">{copy.synopsis}</p>
 
+      {needCapture && (
+        <div style={{ marginTop: 6 }}>
+          <div className="lw-flabel">
+            {lang === "es"
+              ? "Tu correo para jugar"
+              : "Your email to play"}
+          </div>
+          <input
+            className="lw-onbin"
+            type="email"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t(lang, "emailPlaceholder")}
+          />
+          <label className="lw-onblabel">
+            {t(lang, "yourName")}{" "}
+            <span
+              style={{
+                color: "var(--faint)",
+                textTransform: "none",
+                letterSpacing: 0,
+              }}
+            >
+              · {t(lang, "optional")}
+            </span>
+          </label>
+          <input
+            className="lw-onbin"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t(lang, "namePlaceholder")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && emailOk) go();
+            }}
+          />
+        </div>
+      )}
+
       <button
         className="lw-cta"
-        onClick={onContinue}
-        style={{ background: world.accent, margin: "6px 0 24px" }}
+        disabled={!canContinue}
+        onClick={go}
+        style={{ background: world.accent, margin: "10px 0 24px" }}
       >
         {t(lang, "chooseRole")} →
       </button>
