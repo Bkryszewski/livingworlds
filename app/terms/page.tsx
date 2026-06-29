@@ -1,8 +1,8 @@
-// app/terms/page.tsx — Living Worlds Terms of Use (standalone route).
-// Personal-use license posture. DRAFT — have counsel review before relying on it.
+// app/privacy/page.tsx — Living Worlds Privacy Policy (standalone route).
+// Plain, readable policy. DRAFT — have counsel review before relying on it.
 
 export const metadata = {
-  title: "Terms of Use · Living Worlds",
+  title: "Privacy Policy · Living Worlds",
 };
 
 const wrap: React.CSSProperties = {
@@ -13,123 +13,122 @@ const wrap: React.CSSProperties = {
   fontSize: 15,
   lineHeight: 1.7,
 };
-const h1: React.CSSProperties = { color: "#f5f0df", fontSize: 28, margin: "0 0 6px" };
-const h2: React.CSSProperties = { color: "#f5f0df", fontSize: 18, margin: "30px 0 8px" };
+const h1: React.CSSProperties = {
+  color: "#f5f0df",
+  fontSize: 28,
+  margin: "0 0 6px",
+};
+const h2: React.CSSProperties = {
+  color: "#f5f0df",
+  fontSize: 18,
+  margin: "30px 0 8px",
+};
 const muted: React.CSSProperties = { color: "#9aa0ad", fontSize: 13 };
 const a: React.CSSProperties = { color: "#46C7E6" };
 
-export default function TermsPage() {
+export default function PrivacyPage() {
   return (
     <main style={wrap}>
       <a href="/" style={{ ...a, fontSize: 13 }}>
         ← Back to Living Worlds
       </a>
-      <h1 style={{ ...h1, marginTop: 18 }}>Terms of Use</h1>
+      <h1 style={{ ...h1, marginTop: 18 }}>Privacy Policy</h1>
       <p style={muted}>Effective date: June 28, 2026 · Living Worlds is operated by Legacy Publishing Agency LLC.</p>
 
-      <h2 style={h2}>1. The works</h2>
+      <h2 style={h2}>1. Information we collect</h2>
       <p>
-        All worlds, characters, stories, dialogue, and related materials (the
-        “Underlying Works”) are original copyrighted works owned exclusively by
-        Legacy Publishing Agency LLC and its operating divisions, or licensed to
-        it. All rights are reserved.
+        <strong>Account information:</strong> your name and email address, used
+        to sign you in through a one-time email link.
+        <br />
+        <strong>Preferences:</strong> your language choice (English or Spanish).
+        <br />
+        <strong>Gameplay data:</strong> the worlds you play, your progress, and
+        the scenes or “cuts” you generate.
+        <br />
+        <strong>Usage and analytics data:</strong> basic information about how
+        the app is used — such as pages visited, device and browser type, and
+        anonymized interaction patterns (including aggregated heatmaps and
+        session activity) — collected to help us understand and improve the
+        experience.
+        <br />
+        <strong>Purchase information:</strong> when you buy a pass, our payment
+        processor collects your payment details. We do not see or store your
+        full card information.
       </p>
 
-      <h2 style={h2}>2. Content you generate is derivative</h2>
+      <h2 style={h2}>2. How we use your information</h2>
       <p>
-        Any story, scene, “cut,” or script you create through the app
-        (“Generated Content”) is a derivative work of the Underlying Works. As
-        between you and us, all rights in the Underlying Works and in Generated
-        Content remain exclusively with Legacy Publishing Agency LLC and/or the
-        original author and screenwriter of the relevant work.
+        We use your information only to operate and improve Living Worlds —
+        specifically to create and secure your account, sign you in, save your
+        progress and generated cuts, provide access to passes you purchase, send
+        you essential communications about updates, upgrades, rules, and policy
+        changes, and respond to your support requests.
       </p>
 
-      <h2 style={h2}>3. Your personal license</h2>
+      <h2 style={h2}>3. Analytics and improving your experience</h2>
       <p>
-        We grant you a limited, personal, non-exclusive, non-transferable,
-        non-commercial license to access and enjoy the Generated Content you
-        create, for your own personal use. You may not sell, publish,
-        distribute, adapt, or commercially exploit any Generated Content or
-        Underlying Works without our prior written permission.
+        We use analytics and product-improvement tools — currently Vercel
+        Analytics and Microsoft Clarity — to understand how people use Living
+        Worlds so we can make it better. These tools collect aggregated usage
+        metrics and may record anonymized session activity and heatmaps (for
+        example, which areas people tap or scroll). We use this only to improve
+        usability, performance, and the overall experience. We do not use it to
+        advertise to you, and we do not sell this information. These tools may
+        set cookies or similar technologies in your browser to function.
       </p>
 
-      <h2 style={h2}>4. Passes and billing</h2>
+      <h2 style={h2}>4. What we do not do</h2>
       <p>
-        Access is offered as time-limited passes (for example, a 1-Year Pass or
-        a 30-Day Pass). Each pass is a one-time purchase that grants access for
-        the stated period and does not automatically renew. Access ends when the
-        pass period ends.
-      </p>
-      <p>
-        Because a pass provides immediate digital access, all sales are final
-        and passes are non-refundable, except where a refund is required by
-        applicable law. If you believe you were charged in error or experienced
-        a technical problem that prevented access, contact us at{" "}
-        <a style={a} href="mailto:briank@legacypublishing.agency">
-          support@legacypublishing.agency
-        </a>{" "}
-        and we will review your situation in good faith.
+        We do not sell, rent, or trade your personal information to third
+        parties, and we do not use it for third-party advertising. Your
+        information is used to run the app, to understand and improve how it is
+        used, and to communicate with you about it.
       </p>
 
-      <h2 style={h2}>5. Your account</h2>
+      <h2 style={h2}>5. Service providers</h2>
       <p>
-        You are responsible for your account. Please sign in with a consistent
-        email, and use that same email at checkout, so your pass unlocks
-        correctly.
+        We rely on trusted providers that process data on our behalf: Supabase
+        (database and sign-in), our payment processor (purchases), Vercel
+        (hosting and analytics), and Microsoft Clarity (product analytics and
+        session/heatmap insights used to improve usability). Each handles data
+        under its own security and privacy terms.
       </p>
 
-      <h2 style={h2}>6. Acceptable use</h2>
+      <h2 style={h2}>6. Keeping and deleting your data</h2>
       <p>
-        You agree not to misuse the app, reverse-engineer it, scrape it, or
-        attempt to bypass access controls, and not to reproduce or distribute
-        the Underlying Works or Generated Content except as permitted above.
+        We keep your information while your account is active. You may request
+        access to, correction of, or deletion of your data at any time by
+        emailing us at <a style={a} href="mailto:support@legacypublishing.agency">support@legacypublishing.agency</a>.
+        Deleting your account removes your profile and associated data.
       </p>
 
-      <h2 style={h2}>7. Future features</h2>
+      <h2 style={h2}>7. Security</h2>
       <p>
-        Additional tiers — such as the Judge’s Credential and the Studio Pass —
-        are not yet available. When released, they will be governed by separate
-        terms presented at that time.
+        We use industry-standard measures, including encrypted connections and
+        managed authentication, to protect your data. No method is perfectly
+        secure, but we work to safeguard your information.
       </p>
 
-      <h2 style={h2}>8. Termination</h2>
+      <h2 style={h2}>8. Children</h2>
       <p>
-        We may suspend or end access for breach of these Terms, including any
-        unauthorized use or distribution of our works.
+        Living Worlds is not directed to children under 13 (or the minimum age
+        in your location), and we do not knowingly collect their information.
       </p>
 
-      <h2 style={h2}>9. Disclaimers and liability</h2>
+      <h2 style={h2}>9. Changes</h2>
       <p>
-        The app and all content are provided “as is” and “as available,” without
-        warranties of any kind, whether express or implied, including any implied
-        warranties of merchantability, fitness for a particular purpose, and
-        non-infringement. We do not warrant that the app will be uninterrupted,
-        error-free, or secure.
-      </p>
-      <p>
-        To the fullest extent permitted by law, Legacy Publishing Agency LLC will
-        not be liable for any indirect, incidental, special, consequential, or
-        punitive damages, or for any loss of data, profits, or goodwill, arising
-        out of or relating to your use of the app. Our total liability for any
-        claim relating to the app will not exceed the amount you paid us in the
-        twelve months before the claim. You agree to indemnify and hold harmless
-        Legacy Publishing Agency LLC and its owners, divisions, and affiliates
-        from claims arising out of your misuse of the app or violation of these
-        Terms. Some jurisdictions do not allow certain limitations, so some of
-        the above may not apply to you.
+        We may update this policy; material changes will be posted here with a
+        new effective date.
       </p>
 
-      <h2 style={h2}>10. Governing law</h2>
-      <p>These Terms are governed by the laws of the State of Texas.</p>
-
-      <h2 style={h2}>11. Contact</h2>
+      <h2 style={h2}>10. Contact</h2>
       <p>
         Legacy Publishing Agency LLC ·{" "}
-        <a style={a} href="mailto:briank@legacypublishing.agency">support@legacypublishing.agency</a>
+        <a style={a} href="mailto:support@legacypublishing.agency">support@legacypublishing.agency</a>
       </p>
 
       <p style={{ ...muted, marginTop: 32 }}>
-        See also our <a style={a} href="/privacy">Privacy Policy</a>.
+        See also our <a style={a} href="/terms">Terms of Use</a>.
       </p>
     </main>
   );
