@@ -25,6 +25,7 @@ import {
   saveCloudPlaythrough,
   loadCloudPlaythroughs,
   clearCloudPlaythroughs,
+  saveLead,
   type LWProfile,
 } from "@/lib/supabase";
 import { canPlayWorld, SAMCART_CHECKOUT, effectiveTier } from "@/lib/access";
@@ -452,9 +453,7 @@ export default function Page() {
               lang={lang}
               onLang={setLang}
               onHowTo={() => setHowToOpen(true)}
-              onEnter={() =>
-                setStage(profile.name ? "selector" : "onboard")
-              }
+              onEnter={() => setStage("selector")}
             />
           )}
 
@@ -486,8 +485,22 @@ export default function Page() {
           {stage === "world" && world && (
             <WorldDetail
               lang={lang}
-              onContinue={() => setStage("role")}
               worldId={world.id}
+              initial={profile}
+              signedIn={!!authProfile}
+              onContinue={(p) => {
+                if (p.name || p.email) saveProfile(p);
+                // Capture guest leads (signed-in users we already have).
+                if (p.email && !authProfile) {
+                  void saveLead({
+                    email: p.email,
+                    name: p.name,
+                    language: lang,
+                    source: world.id,
+                  });
+                }
+                setStage("role");
+              }}
             />
           )}
 
@@ -692,15 +705,25 @@ export default function Page() {
 function WorldDetail({
   worldId,
   lang,
+  initial,
+  signedIn,
   onContinue,
 }: {
   worldId: string;
   lang: Lang;
-  onContinue: () => void;
+  initial: { name: string; email: string };
+  signedIn: boolean;
+  onContinue: (p: { name: string; email: string }) => void;
 }) {
   const world = getWorld(worldId)!;
   const copy = world.copy[lang];
   const [trailerOpen, setTrailerOpen] = useState(false);
+  const [name, setName] = useState(initial.name || "");
+  const [email, setEmail] = useState(initial.email || "");
+  // Only ask for an email if we don't already have one (guest, first time).
+  const needCapture = !signedIn && !initial.email;
+  const emailOk = /\S+@\S+\.\S+/.test(email.trim());
+  const canContinue = needCapture ? emailOk : true;
   const embed = toEmbedUrl(world.trailer);
   const isFile = isVideoFile(world.trailer);
   return (
@@ -764,10 +787,53 @@ function WorldDetail({
       <div className="lw-flabel">{t(lang, "synopsis")}</div>
       <p className="lw-sub">{copy.synopsis}</p>
 
+      {needCapture && (
+        <>
+          <label className="lw-onblabel">{t(lang, "yourEmail")}</label>
+          <input
+            className="lw-onbin"
+            type="email"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t(lang, "emailPlaceholder")}
+          />
+          <label className="lw-onblabel">
+            {t(lang, "yourName")}{" "}
+            <span
+              style={{
+                color: "var(--faint)",
+                textTransform: "none",
+                letterSpacing: 0,
+              }}
+            >
+              · {t(lang, "optional")}
+            </span>
+          </label>
+          <input
+            className="lw-onbin"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t(lang, "namePlaceholder")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && emailOk)
+                onContinue({ name: name.trim(), email: email.trim() });
+            }}
+          />
+        </>
+      )}
+
       <button
         className="lw-cta"
-        onClick={onContinue}
-        style={{ background: world.accent, margin: "6px 0 24px" }}
+        disabled={!canContinue}
+        onClick={() =>
+          onContinue(
+            needCapture
+              ? { name: name.trim(), email: email.trim() }
+              : { name: initial.name, email: initial.email }
+          )
+        }
+        style={{ background: world.accent, margin: "10px 0 24px" }}
       >
         {t(lang, "chooseRole")} →
       </button>

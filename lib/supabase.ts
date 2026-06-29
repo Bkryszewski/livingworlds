@@ -182,3 +182,35 @@ export async function clearCloudPlaythroughs(): Promise<void> {
   if (!user) return;
   await sb.from("playthroughs").delete().eq("user_id", user.id);
 }
+
+/**
+ * Save a guest lead (email required, name optional) so captured emails are
+ * retrievable by the operator. Insert-only by RLS; upsert avoids duplicate-key
+ * errors on repeat visits. No-ops gracefully if auth env vars aren't present.
+ */
+export async function saveLead(lead: {
+  email: string;
+  name?: string;
+  language?: string;
+  source?: string;
+}): Promise<void> {
+  const sb = supabase();
+  if (!sb) return;
+  const email = lead.email.trim().toLowerCase();
+  if (!email) return;
+  try {
+    await sb
+      .from("leads")
+      .upsert(
+        {
+          email,
+          name: lead.name?.trim() || null,
+          language: lead.language || "en",
+          source: lead.source || "perdido",
+        },
+        { onConflict: "email", ignoreDuplicates: true }
+      );
+  } catch {
+    /* never block play on lead capture */
+  }
+}
