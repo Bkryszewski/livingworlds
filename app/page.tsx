@@ -42,7 +42,7 @@ import {
   type CutRecord,
 } from "@/lib/progress";
 import { computeCoverage } from "@/lib/coverage";
-import analytics, { initSession } from "@/lib/analytics";
+import analytics, { initSession, identify } from "@/lib/analytics";
 
 const AI_STORE_KEY = "livingworlds:ai";
 const PROFILE_KEY = "livingworlds:profile";
@@ -203,6 +203,16 @@ export default function Page() {
       const prof = await syncProfile();
       if (!active || !prof) return;
       applyProfile(prof);
+      // Attribute analytics to this account + record the login.
+      try {
+        const {
+          data: { user },
+        } = await sb.auth.getUser();
+        identify(user?.id || null);
+        if (user) analytics.loginSuccess();
+      } catch {
+        /* ignore */
+      }
       // Per-account progress: replace local view with this account's history.
       const rows = await loadCloudPlaythroughs();
       if (!active) return;
@@ -222,6 +232,7 @@ export default function Page() {
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") refresh();
       if (event === "SIGNED_OUT" && active) {
         setAuthProfile(null);
+        identify(null);
         setProgress(loadProgress());
         setCuts(loadLocalCuts());
       }

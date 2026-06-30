@@ -17,6 +17,8 @@
 
 export type Metadata = Record<string, unknown>;
 
+import { supabase } from "@/lib/supabase";
+
 export interface AnalyticsProvider {
   name: string;
   track: (eventName: string, metadata?: Metadata) => void;
@@ -49,6 +51,180 @@ const clarityProvider: AnalyticsProvider = {
 };
 
 const PROVIDERS: AnalyticsProvider[] = [clarityProvider];
+
+// --- Session context (for the durable Supabase warehouse) --------------------
+// Captured once per session: anonymous visitor id, session id, attribution,
+// and coarse environment. Persisted so SPA navigation keeps the same context.
+
+interface SessionContext {
+  visitorId: string;
+  sessionId: string;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  referrer: string | null;
+  device_type: string;
+  browser: string;
+  os: string;
+  lang: string | null;
+  country: string | null;
+}
+
+let ctx: SessionContext | null = null;
+let currentUserId: string | null = null;
+
+function uuid(): string {
+  try {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* fall through */
+  }
+  // RFC4122-ish fallback
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+function detectDevice(ua: string): string {
+  if (/iPad|Tablet/i.test(ua)) return "tablet";
+  if (/Mobi|Android|iPhone/i.test(ua)) return "mobile";
+  return "desktop";
+}
+function detectBrowser(ua: string): string {
+  if (/Edg\//.test(ua)) return "Edge";
+  if (/OPR\/|Opera/.test(ua)) return "Opera";
+  if (/Chrome\//.test(ua)) return "Chrome";
+  if (/Safari\//.test(ua) && !/Chrome/.test(ua)) return "Safari";
+  if (/Firefox\//.test(ua)) return "Firefox";
+  return "Other";
+}
+function detectOS(ua: string): string {
+  if (/Windows/.test(ua)) return "Windows";
+  if (/iPhone|iPad|iPod/.test(ua)) return "iOS";
+  if (/Android/.test(ua)) return "Android";
+  if (/Mac OS X/.test(ua)) return "macOS";
+  if (/Linux/.test(ua)) return "Linux";
+  return "Other";
+}
+
+function ensureContext(): SessionContext | null {
+  if (ctx) return ctx;
+  if (typeof window === "undefined") return null;
+  try {
+    let vid = window.localStorage.getItem("lw:vid");
+    if (!vid) {
+      vid = uuid();
+      window.localStorage.setItem("lw:vid", vid);
+    }
+    let sid = window.sessionStorage.getItem("lw:sid");
+    if (!sid) {
+      sid = uuid();
+      window.sessionStorage.setItem("lw:sid", sid);
+    }
+    // UTM: capture from URL on first visit of the session, persist for reuse.
+    const stored = window.sessionStorage.getItem("lw:utm");
+    let utm: Record<string, string | null>;
+    if (stored) {
+      utm = JSON.parse(stored);
+    } else {
+      const p = new URLSearchParams(window.location.search);
+      utm = {
+        utm_source: p.get("utm_source"),
+        utm_medium: p.get("utm_medium"),
+        utm_campaign: p.get("utm_campaign"),
+        utm_content: p.get("utm_content"),
+        utm_term: p.get("utm_term"),
+      };
+      window.sessionStorage.setItem("lw:utm", JSON.stringify(utm));
+    }
+    const ua = navigator.userAgent || "";
+    let country: string | null = null;
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      country = tz || null;
+    } catch {
+      country = null;
+    }
+    ctx = {
+      visitorId: vid,
+      sessionId: sid,
+      utm_source: utm.utm_source ?? null,
+      utm_medium: utm.utm_medium ?? null,
+      utm_campaign: utm.utm_campaign ?? null,
+      utm_content: utm.utm_content ?? null,
+      utm_term: utm.utm_term ?? null,
+      referrer: document.referrer || null,
+      device_type: detectDevice(ua),
+      browser: detectBrowser(ua),
+      os: detectOS(ua),
+      lang: navigator.language || null,
+      country,
+    };
+    return ctx;
+  } catch {
+    return null;
+  }
+}
+
+/** Attach the authenticated user id to subsequent events (call on login). */
+export function identify(userId: string | null): void {
+  currentUserId = userId;
+}
+
+/** Durable warehouse provider: persists every event to Supabase. */
+const supabaseProvider: AnalyticsProvider = {
+  name: "supabase",
+  track(eventName, metadata) {
+    const c = ensureContext();
+    if (!c) return;
+    const sb = supabase();
+    if (!sb) return;
+    const m = metadata || {};
+    const pick = (k: string) =>
+      typeof m[k] === "string" ? (m[k] as string) : null;
+    const row = {
+      event_name: eventName,
+      visitor_id: c.visitorId,
+      session_id: c.sessionId,
+      user_id: currentUserId,
+      stage: pick("stage"),
+      world_id: pick("world") || pick("worldId"),
+      role_id: pick("roleId"),
+      lang: c.lang,
+      utm_source: c.utm_source,
+      utm_medium: c.utm_medium,
+      utm_campaign: c.utm_campaign,
+      utm_content: c.utm_content,
+      utm_term: c.utm_term,
+      referrer: c.referrer,
+      device_type: c.device_type,
+      browser: c.browser,
+      os: c.os,
+      country: c.country,
+      props: m,
+    };
+    // Fire-and-forget; analytics must never block the app.
+    try {
+      void sb
+        .from("analytics_events")
+        .insert(row)
+        .then(
+          () => {},
+          () => {}
+        );
+    } catch {
+      /* ignore */
+    }
+  },
+};
+
+PROVIDERS.push(supabaseProvider);
 
 /** Register an additional analytics provider at runtime (e.g. GA4, PostHog). */
 export function addAnalyticsProvider(p: AnalyticsProvider): void {
@@ -154,6 +330,9 @@ export function initSession(): void {
   if (typeof window === "undefined" || sessionInitialized) return;
   sessionInitialized = true;
 
+  // Capture session context up front (visitor id, attribution, environment).
+  ensureContext();
+
   // Returning player: a prior-visit flag in localStorage.
   try {
     const KEY = "lw:lastVisit";
@@ -209,6 +388,7 @@ export const analytics = {
   // -- Player onboarding ----------------------------------------------------
   playerNameEntered: () => trackOnce("player_name_entered"),
   emailEntered: () => trackOnce("email_entered"),
+  loginSuccess: () => trackOnce("login_success"),
   roleSelectionViewed: () => trackLivingWorldsEvent("role_selection_viewed"),
   /**
    * Record a role selection. Roles are authored per story, so we never make
