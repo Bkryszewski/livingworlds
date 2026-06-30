@@ -315,7 +315,13 @@ export default function AdminPage() {
         </div>
 
         <h2 style={{ fontSize: 16, margin: "0 0 12px" }}>Participation funnel</h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: 10,
+          }}
+        >
           {FUNNEL.map((s, i) => {
             const n = counts[i];
             const pctTop = top ? Math.round((n / top) * 100) : 0;
@@ -323,20 +329,78 @@ export default function AdminPage() {
             const stepConv = prev ? Math.round((n / prev) * 100) : 0;
             const drop = prev - n;
             return (
-              <div key={s.event} style={{ border: `1px solid ${LINE}`, borderRadius: 12, background: "rgba(255,255,255,.03)", padding: "12px 14px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>{i + 1}. {s.label}</span>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: TEAL }}>{n}</span>
+              <div
+                key={s.event}
+                style={{
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 12,
+                  background: "rgba(255,255,255,.03)",
+                  padding: "12px 13px",
+                  display: "flex",
+                  flexDirection: "column",
+                  minWidth: 0,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      color: MUT,
+                      letterSpacing: ".08em",
+                    }}
+                  >
+                    STEP {i + 1}
+                  </span>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: TEAL, lineHeight: 1 }}>
+                    {n}
+                  </span>
                 </div>
-                <div style={{ height: 8, borderRadius: 5, background: LINE, overflow: "hidden", margin: "8px 0 6px" }}>
-                  <span style={{ display: "block", height: "100%", width: `${pctTop}%`, background: `linear-gradient(90deg, ${TEAL}, ${GOLD})` }} />
+                <div
+                  style={{
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    marginBottom: 8,
+                    minHeight: 32,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {s.label}
                 </div>
-                <div style={{ fontSize: 11.5, color: MUT }}>
+                <div
+                  style={{
+                    height: 6,
+                    borderRadius: 4,
+                    background: LINE,
+                    overflow: "hidden",
+                    marginBottom: 7,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "block",
+                      height: "100%",
+                      width: `${pctTop}%`,
+                      background: `linear-gradient(90deg, ${TEAL}, ${GOLD})`,
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: 10.5, color: MUT, lineHeight: 1.45 }}>
                   {pctTop}% of visitors
                   {i > 0 && (
                     <>
-                      {" · "}{stepConv}% from previous
-                      {drop > 0 && <span style={{ color: "#d9847a" }}>{" · "}{drop} dropped</span>}
+                      <br />
+                      {stepConv}% from prev
+                      {drop > 0 && (
+                        <span style={{ color: "#d9847a" }}> · {drop} dropped</span>
+                      )}
                     </>
                   )}
                 </div>
