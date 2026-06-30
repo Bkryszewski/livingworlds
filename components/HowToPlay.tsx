@@ -95,9 +95,11 @@ const STEPS: Step[] = [
 export default function HowToPlay({
   lang,
   onClose,
+  onStart,
 }: {
   lang: Lang;
   onClose: () => void;
+  onStart?: () => void;
 }) {
   const es = lang === "es";
   return (
@@ -166,7 +168,11 @@ export default function HowToPlay({
           : "Switch between English and Español anytime with the language toggle."}
       </p>
 
-      <button className="lw-cta" style={{ marginTop: 14 }} onClick={onClose}>
+      <button
+        className="lw-cta"
+        style={{ marginTop: 14 }}
+        onClick={onStart || onClose}
+      >
         {es ? "Empezar a jugar" : "Start playing"} →
       </button>
     </div>

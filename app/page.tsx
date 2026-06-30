@@ -629,7 +629,14 @@ export default function Page() {
                 className="lw-modalcard"
                 onClick={(e) => e.stopPropagation()}
               >
-                <HowToPlay lang={lang} onClose={() => setHowToOpen(false)} />
+                <HowToPlay
+                  lang={lang}
+                  onClose={() => setHowToOpen(false)}
+                  onStart={() => {
+                    setHowToOpen(false);
+                    setStage("selector");
+                  }}
+                />
               </div>
             </div>
           )}
