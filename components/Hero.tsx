@@ -1,6 +1,7 @@
 "use client";
 import type { Lang } from "@/lib/types";
 import { t } from "@/lib/i18n";
+import analytics from "@/lib/analytics";
 
 /**
  * Hero — the title experience. Lands the audience inside Living Worlds and
@@ -25,10 +26,14 @@ export default function Hero({
         role="button"
         tabIndex={0}
         aria-label="Enter Living Worlds and open the Dimension Dial"
-        onClick={onEnter}
+        onClick={() => {
+          analytics.landingTitleClicked();
+          onEnter();
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
+            analytics.landingTitleClicked();
             onEnter();
           }
         }}
@@ -41,10 +46,14 @@ export default function Hero({
         role="button"
         tabIndex={0}
         aria-label="Enter Living Worlds and open the Dimension Dial"
-        onClick={onEnter}
+        onClick={() => {
+          analytics.landingSubtitleClicked();
+          onEnter();
+        }}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
+            analytics.landingSubtitleClicked();
             onEnter();
           }
         }}
@@ -52,7 +61,13 @@ export default function Hero({
         {t(lang, "promise")}
       </p>
 
-      <button className="lw-cta" onClick={onEnter}>
+      <button
+        className="lw-cta"
+        onClick={() => {
+          analytics.landingCtaClicked();
+          onEnter();
+        }}
+      >
         {t(lang, "enter")}
       </button>
 

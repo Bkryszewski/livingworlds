@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { WORLDS, getWorld } from "@/data/worlds";
 import type { AIConfig, AssistanceLevel, Lang, Stage } from "@/lib/types";
 import { DEFAULT_AI_CONFIG } from "@/lib/types";
@@ -42,6 +42,7 @@ import {
   type CutRecord,
 } from "@/lib/progress";
 import { computeCoverage } from "@/lib/coverage";
+import analytics, { initSession } from "@/lib/analytics";
 
 const AI_STORE_KEY = "livingworlds:ai";
 const PROFILE_KEY = "livingworlds:profile";
@@ -103,6 +104,11 @@ export default function Page() {
   }
 
   function choosePass(id: string) {
+    if (id === "festival_year" || id === "festival_30day" || id === "festival") {
+      analytics.festivalPassClicked();
+    } else if (id === "studio") {
+      analytics.studioPassClicked();
+    }
     if (id === "guest") {
       setPass("guest");
       flash(lang === "es" ? "Pase de Invitado activo" : "Guest Pass active");
@@ -142,6 +148,8 @@ export default function Page() {
   useEffect(() => {
     // Auto-detect language up front: saved choice → browser → country → EN.
     setLang(detectInitialLang());
+    // Start participation analytics (returning-player + active-session timers).
+    initSession();
     try {
       const raw = window.localStorage.getItem(AI_STORE_KEY);
       if (raw) setAiConfig({ ...DEFAULT_AI_CONFIG, ...JSON.parse(raw) });
@@ -269,10 +277,42 @@ export default function Page() {
     postHeight();
   }, [stage]);
 
+  // Participation analytics: fire the right event as the player moves through
+  // stages. Pure instrumentation — no UX or flow change.
+  const prevStageRef = useRef<Stage>("boot");
+  const playingRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevStageRef.current;
+    if (stage === "hero") analytics.landingViewed();
+    else if (stage === "selector") analytics.dimensionDialOpened();
+    else if (stage === "role") analytics.roleSelectionViewed();
+    else if (stage === "player" && worldId) {
+      analytics.storyStarted(worldId);
+      playingRef.current = worldId;
+    } else if (stage === "cut") {
+      if (worldId) analytics.storyCompleted(worldId);
+      playingRef.current = null;
+    } else if (stage === "boxoffice") {
+      analytics.festivalPassViewed();
+      analytics.studioPassViewed();
+    }
+    // Left a story without reaching the cut.
+    if (prev === "player" && stage !== "cut" && playingRef.current) {
+      analytics.storyAbandoned(playingRef.current);
+      playingRef.current = null;
+    }
+    prevStageRef.current = stage;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
+
   function openWorld(id: string) {
     const w = getWorld(id);
-    if (w?.locked) return;
+    if (w?.locked) {
+      analytics.worldLockedSelected(id);
+      return;
+    }
     if (!canPlayWorld(pass, id)) {
+      analytics.worldLockedSelected(id);
       setPassFrom(stage);
       setStage("boxoffice");
       flash(
@@ -282,6 +322,7 @@ export default function Page() {
       );
       return;
     }
+    analytics.worldSelected(id);
     setWorldId(id);
     setRoleId(null);
     setStage("world");
@@ -516,7 +557,14 @@ export default function Page() {
               world={world}
               lang={lang}
               selected={roleId}
-              onSelect={setRoleId}
+              onSelect={(id) => {
+                setRoleId(id);
+                const r = world.roles.find((x) => x.id === id);
+                analytics.roleSelected(id, {
+                  world: world.id,
+                  adversary: !!r?.adversary,
+                });
+              }}
               onContinue={() => setStage("assistance")}
             />
           )}
@@ -742,6 +790,10 @@ function WorldDetail({
 
   function go() {
     if (!canContinue) return;
+    if (needCapture) {
+      if (email.trim()) analytics.emailEntered();
+      if (name.trim()) analytics.playerNameEntered();
+    }
     onContinue(
       needCapture
         ? { name: name.trim(), email: email.trim() }

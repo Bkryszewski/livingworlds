@@ -1,8 +1,9 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Lang, World } from "@/lib/types";
 import { t } from "@/lib/i18n";
 import { canPlayWorld } from "@/lib/access";
+import analytics from "@/lib/analytics";
 
 /**
  * WorldSelector — the Dimension Dial. A swipeable poster carousel of worlds
@@ -29,6 +30,15 @@ export default function WorldSelector({
   const [mode, setMode] = useState<"solo" | "coop">("solo");
   const dragX = useRef(0);
   const active = worlds[idx] || worlds[0];
+
+  // Dial engagement: the previewed (centered) world, and that they scrolled.
+  const firstPreview = useRef(true);
+  useEffect(() => {
+    if (active) analytics.dimensionWorldPreviewed(active.id);
+    if (firstPreview.current) firstPreview.current = false;
+    else analytics.dimensionScrolled();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx]);
 
   const prev = () => setIdx((i) => Math.max(0, i - 1));
   const next = () => setIdx((i) => Math.min(worlds.length - 1, i + 1));
