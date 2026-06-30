@@ -315,3 +315,115 @@ export const LANGS: { id: Lang; label: string }[] = [
   { id: "en", label: "English" },
   { id: "es", label: "Español" },
 ];
+
+// --- Automatic language detection -------------------------------------------
+// Priority: saved manual preference → browser language → country → English.
+// Manual choices are saved and never overridden on future visits.
+
+export const LANG_KEY = "livingworlds:lang";
+
+const SPANISH_COUNTRIES = new Set([
+  "AR", "BO", "CL", "CO", "CR", "CU", "DO", "EC", "SV", "GQ", "GT", "HN",
+  "MX", "NI", "PA", "PY", "PE", "PR", "ES", "UY", "VE",
+]);
+
+// Common Spanish-speaking timezones → country (for visitors whose browser
+// language carries no Spanish hint but who are physically in-country).
+const TZ_COUNTRY: Record<string, string> = {
+  "America/Mexico_City": "MX",
+  "America/Monterrey": "MX",
+  "America/Merida": "MX",
+  "America/Matamoros": "MX",
+  "America/Chihuahua": "MX",
+  "America/Hermosillo": "MX",
+  "America/Tijuana": "MX",
+  "America/Cancun": "MX",
+  "America/Argentina/Buenos_Aires": "AR",
+  "America/Buenos_Aires": "AR",
+  "America/Argentina/Cordoba": "AR",
+  "America/Bogota": "CO",
+  "America/Lima": "PE",
+  "America/Santiago": "CL",
+  "America/Caracas": "VE",
+  "America/La_Paz": "BO",
+  "America/Guayaquil": "EC",
+  "America/Asuncion": "PY",
+  "America/Montevideo": "UY",
+  "America/Costa_Rica": "CR",
+  "America/Havana": "CU",
+  "America/Santo_Domingo": "DO",
+  "America/El_Salvador": "SV",
+  "America/Guatemala": "GT",
+  "America/Tegucigalpa": "HN",
+  "America/Managua": "NI",
+  "America/Panama": "PA",
+  "America/Puerto_Rico": "PR",
+  "Europe/Madrid": "ES",
+  "Atlantic/Canary": "ES",
+  "Africa/Malabo": "GQ",
+};
+
+/** The saved manual language preference, if one exists. */
+export function savedLang(): Lang | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const v = window.localStorage.getItem(LANG_KEY);
+    return v === "en" || v === "es" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist a manual language choice so it's never overridden later. */
+export function saveLang(l: Lang): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(LANG_KEY, l);
+  } catch {
+    /* ignore */
+  }
+}
+
+function timezoneCountry(): string | null {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return tz ? TZ_COUNTRY[tz] || null : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Detect the initial language without ever asking the visitor:
+ * 1) saved manual preference (highest), 2) browser language begins with "es",
+ * 3) Spanish-speaking country (locale region or timezone), else English.
+ */
+export function detectInitialLang(): Lang {
+  const saved = savedLang();
+  if (saved) return saved;
+  if (typeof navigator === "undefined") return "en";
+
+  const langs: string[] =
+    navigator.languages && navigator.languages.length
+      ? Array.from(navigator.languages)
+      : navigator.language
+      ? [navigator.language]
+      : [];
+
+  // 2) Any preferred browser language beginning with "es" → Spanish.
+  if (langs.some((l) => l && l.toLowerCase().startsWith("es"))) return "es";
+
+  // 3) Country fallback: region subtag (e.g. en-MX) then timezone.
+  const regions = langs
+    .map((l) => {
+      const m = /[-_]([A-Za-z]{2})\b/.exec(l || "");
+      return m ? m[1].toUpperCase() : "";
+    })
+    .filter(Boolean);
+  if (regions.some((r) => SPANISH_COUNTRIES.has(r))) return "es";
+
+  const tz = timezoneCountry();
+  if (tz && SPANISH_COUNTRIES.has(tz)) return "es";
+
+  return "en";
+}

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { WORLDS, getWorld } from "@/data/worlds";
 import type { AIConfig, AssistanceLevel, Lang, Stage } from "@/lib/types";
 import { DEFAULT_AI_CONFIG } from "@/lib/types";
-import { t } from "@/lib/i18n";
+import { t, detectInitialLang, saveLang } from "@/lib/i18n";
 import { toEmbedUrl, isVideoFile } from "@/lib/trailer";
 
 import LanguageToggle from "@/components/LanguageToggle";
@@ -140,6 +140,8 @@ export default function Page() {
   }
 
   useEffect(() => {
+    // Auto-detect language up front: saved choice → browser → country → EN.
+    setLang(detectInitialLang());
     try {
       const raw = window.localStorage.getItem(AI_STORE_KEY);
       if (raw) setAiConfig({ ...DEFAULT_AI_CONFIG, ...JSON.parse(raw) });
@@ -420,7 +422,13 @@ export default function Page() {
                     ? "Entrar"
                     : "Sign in"}
                 </button>
-                <LanguageToggle lang={lang} onChange={setLang} />
+                <LanguageToggle
+                  lang={lang}
+                  onChange={(l) => {
+                    setLang(l);
+                    saveLang(l);
+                  }}
+                />
                 <button
                   className="lw-aibadge"
                   onClick={() => setHowToOpen(true)}
