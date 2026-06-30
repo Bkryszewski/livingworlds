@@ -3,9 +3,10 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 // Phase 1 admin analytics — internal funnel + KPIs from analytics_events.
-// Admin-gated: only profiles with is_admin = true can see data.
+// Self-contained email+password sign-in (no magic link). Only profiles with
+// is_admin = true can see data.
 
-type Access = "loading" | "denied" | "ready";
+type Access = "loading" | "login" | "denied" | "ready";
 
 interface Kpis {
   total_events: number;
@@ -29,12 +30,32 @@ const FUNNEL: { event: string; label: string }[] = [
   { event: "story_completed", label: "Story completed" },
 ];
 
-const INK = "#0a0d14";
 const GOLD = "#C7A24A";
 const TEAL = "#27B6AC";
 const PAPER = "#e8edf7";
 const MUT = "#9aa0ad";
 const LINE = "rgba(255,255,255,.1)";
+
+const wrap: React.CSSProperties = {
+  minHeight: "100vh",
+  background:
+    "radial-gradient(80% 60% at 50% 0%, #10131c 0%, #070810 60%, #04050a 100%)",
+  color: PAPER,
+  fontFamily: "-apple-system, system-ui, 'Segoe UI', Roboto, sans-serif",
+  padding: "32px 20px 80px",
+};
+const inner: React.CSSProperties = { maxWidth: 860, margin: "0 auto" };
+const input: React.CSSProperties = {
+  width: "100%",
+  border: `1px solid ${LINE}`,
+  borderRadius: 12,
+  background: "rgba(255,255,255,.04)",
+  color: PAPER,
+  padding: "12px 14px",
+  fontSize: 15,
+  outline: "none",
+  marginTop: 8,
+};
 
 export default function AdminPage() {
   const [access, setAccess] = useState<Access>("loading");
@@ -43,17 +64,24 @@ export default function AdminPage() {
   const [funnel, setFunnel] = useState<FunnelRow[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const load = useCallback(async () => {
+  // login form
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
+  // Decide access for the current session, and load data if admin.
+  const evaluate = useCallback(async () => {
     const sb = supabase();
     if (!sb) {
-      setAccess("denied");
+      setAccess("login");
       return;
     }
     const {
       data: { user },
     } = await sb.auth.getUser();
     if (!user) {
-      setAccess("denied");
+      setAccess("login");
       return;
     }
     const { data: prof } = await sb
@@ -66,6 +94,11 @@ export default function AdminPage() {
       return;
     }
     setAccess("ready");
+  }, []);
+
+  const loadData = useCallback(async () => {
+    const sb = supabase();
+    if (!sb) return;
     setLoading(true);
     const [{ data: k }, { data: f }] = await Promise.all([
       sb.rpc("admin_kpis", { days }),
@@ -77,17 +110,97 @@ export default function AdminPage() {
   }, [days]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void evaluate();
+  }, [evaluate]);
 
-  const wrap: React.CSSProperties = {
-    minHeight: "100vh",
-    background: "radial-gradient(80% 60% at 50% 0%, #10131c 0%, #070810 60%, #04050a 100%)",
-    color: PAPER,
-    fontFamily: "-apple-system, system-ui, 'Segoe UI', Roboto, sans-serif",
-    padding: "32px 20px 80px",
-  };
-  const inner: React.CSSProperties = { maxWidth: 860, margin: "0 auto" };
+  useEffect(() => {
+    if (access === "ready") void loadData();
+  }, [access, loadData]);
+
+  async function doLogin() {
+    const sb = supabase();
+    if (!sb) return;
+    setSigningIn(true);
+    setLoginError("");
+    const { error } = await sb.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    setSigningIn(false);
+    if (error) {
+      setLoginError(error.message || "Sign-in failed.");
+      return;
+    }
+    setPassword("");
+    await evaluate();
+  }
+
+  async function doSignOut() {
+    const sb = supabase();
+    if (sb) await sb.auth.signOut();
+    setAccess("login");
+  }
+
+  // ---- LOGIN ----------------------------------------------------------------
+  if (access === "login") {
+    return (
+      <div style={wrap}>
+        <div style={{ ...inner, maxWidth: 380 }}>
+          <div style={{ height: 3, width: 56, background: GOLD, marginBottom: 18 }} />
+          <h1 style={{ fontSize: 22, margin: "0 0 6px" }}>Admin sign in</h1>
+          <p style={{ color: MUT, fontSize: 13, margin: "0 0 18px", lineHeight: 1.5 }}>
+            Sign in with your admin email and password.
+          </p>
+          <input
+            style={input}
+            type="email"
+            inputMode="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="username"
+          />
+          <input
+            style={input}
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void doLogin();
+            }}
+          />
+          {loginError && (
+            <p style={{ color: "#d9847a", fontSize: 12.5, marginTop: 10 }}>
+              {loginError}
+            </p>
+          )}
+          <button
+            onClick={() => void doLogin()}
+            disabled={signingIn || !email || !password}
+            style={{
+              width: "100%",
+              marginTop: 16,
+              border: "none",
+              borderRadius: 12,
+              padding: "13px",
+              fontSize: 15,
+              fontWeight: 800,
+              cursor: signingIn ? "default" : "pointer",
+              color: "#06101a",
+              background: signingIn ? "#1a1f2b" : TEAL,
+            }}
+          >
+            {signingIn ? "Signing in…" : "Sign in"}
+          </button>
+          <a href="/" style={{ color: TEAL, fontSize: 13, display: "inline-block", marginTop: 14 }}>
+            ← Back to Living Worlds
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   if (access === "loading") {
     return (
@@ -103,21 +216,30 @@ export default function AdminPage() {
     return (
       <div style={wrap}>
         <div style={inner}>
-          <h1 style={{ fontSize: 22, margin: "0 0 8px" }}>Admin only</h1>
+          <h1 style={{ fontSize: 22, margin: "0 0 8px" }}>Not an admin</h1>
           <p style={{ color: MUT, lineHeight: 1.6 }}>
-            This dashboard is restricted. Sign in to Living Worlds with an admin
-            account, then reload this page. If you are signed in and still see
-            this, your account isn&apos;t marked as an admin yet.
+            You&apos;re signed in, but this account isn&apos;t marked as an admin.
           </p>
-          <a href="/" style={{ color: TEAL, fontSize: 14 }}>
-            ← Back to Living Worlds
-          </a>
+          <button
+            onClick={() => void doSignOut()}
+            style={{
+              marginTop: 12,
+              border: `1px solid ${LINE}`,
+              background: "transparent",
+              color: MUT,
+              borderRadius: 10,
+              padding: "8px 14px",
+              cursor: "pointer",
+            }}
+          >
+            Sign out
+          </button>
         </div>
       </div>
     );
   }
 
-  // Funnel maths: visitors per step, % of top, step-to-step conversion.
+  // ---- DASHBOARD ------------------------------------------------------------
   const byEvent = new Map(funnel.map((r) => [r.event_name, r.visitors]));
   const counts = FUNNEL.map((s) => byEvent.get(s.event) || 0);
   const top = counts[0] || 0;
@@ -134,14 +256,7 @@ export default function AdminPage() {
         padding: "14px 16px",
       }}
     >
-      <div
-        style={{
-          fontSize: 10,
-          letterSpacing: ".12em",
-          textTransform: "uppercase",
-          color: MUT,
-        }}
-      >
+      <div style={{ fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: MUT }}>
         {label}
       </div>
       <div style={{ fontSize: 26, fontWeight: 800, color: TEAL, marginTop: 4 }}>
@@ -153,26 +268,23 @@ export default function AdminPage() {
   return (
     <div style={wrap}>
       <div style={inner}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            marginBottom: 6,
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 6 }}>
           <div style={{ height: 3, width: 56, background: GOLD }} />
-          <a href="/" style={{ color: TEAL, fontSize: 13 }}>
-            ← App
-          </a>
+          <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+            <button
+              onClick={() => void doSignOut()}
+              style={{ background: "none", border: "none", color: MUT, fontSize: 13, cursor: "pointer" }}
+            >
+              Sign out
+            </button>
+            <a href="/" style={{ color: TEAL, fontSize: 13 }}>← App</a>
+          </div>
         </div>
         <h1 style={{ fontSize: 26, margin: "6px 0 2px" }}>Living Worlds — Analytics</h1>
         <p style={{ color: MUT, fontSize: 13, margin: "0 0 18px" }}>
           Internal product funnel · source of truth
         </p>
 
-        {/* Date range */}
         <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
           {[7, 30, 90].map((d) => (
             <button
@@ -192,14 +304,9 @@ export default function AdminPage() {
               {d} days
             </button>
           ))}
-          {loading && (
-            <span style={{ color: MUT, fontSize: 12, alignSelf: "center" }}>
-              updating…
-            </span>
-          )}
+          {loading && <span style={{ color: MUT, fontSize: 12, alignSelf: "center" }}>updating…</span>}
         </div>
 
-        {/* KPI row */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 26 }}>
           {kpiCard("Visitors", kpis?.visitors)}
           {kpiCard("Sessions", kpis?.sessions)}
@@ -207,7 +314,6 @@ export default function AdminPage() {
           {kpiCard("Total events", kpis?.total_events)}
         </div>
 
-        {/* Funnel */}
         <h2 style={{ fontSize: 16, margin: "0 0 12px" }}>Participation funnel</h2>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {FUNNEL.map((s, i) => {
@@ -217,60 +323,20 @@ export default function AdminPage() {
             const stepConv = prev ? Math.round((n / prev) * 100) : 0;
             const drop = prev - n;
             return (
-              <div
-                key={s.event}
-                style={{
-                  border: `1px solid ${LINE}`,
-                  borderRadius: 12,
-                  background: "rgba(255,255,255,.03)",
-                  padding: "12px 14px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    gap: 10,
-                  }}
-                >
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>
-                    {i + 1}. {s.label}
-                  </span>
-                  <span style={{ fontSize: 14, fontWeight: 800, color: TEAL }}>
-                    {n}
-                  </span>
+              <div key={s.event} style={{ border: `1px solid ${LINE}`, borderRadius: 12, background: "rgba(255,255,255,.03)", padding: "12px 14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700 }}>{i + 1}. {s.label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: TEAL }}>{n}</span>
                 </div>
-                <div
-                  style={{
-                    height: 8,
-                    borderRadius: 5,
-                    background: LINE,
-                    overflow: "hidden",
-                    margin: "8px 0 6px",
-                  }}
-                >
-                  <span
-                    style={{
-                      display: "block",
-                      height: "100%",
-                      width: `${pctTop}%`,
-                      background: `linear-gradient(90deg, ${TEAL}, ${GOLD})`,
-                    }}
-                  />
+                <div style={{ height: 8, borderRadius: 5, background: LINE, overflow: "hidden", margin: "8px 0 6px" }}>
+                  <span style={{ display: "block", height: "100%", width: `${pctTop}%`, background: `linear-gradient(90deg, ${TEAL}, ${GOLD})` }} />
                 </div>
                 <div style={{ fontSize: 11.5, color: MUT }}>
                   {pctTop}% of visitors
                   {i > 0 && (
                     <>
-                      {" · "}
-                      {stepConv}% from previous
-                      {drop > 0 && (
-                        <span style={{ color: "#d9847a" }}>
-                          {" · "}
-                          {drop} dropped
-                        </span>
-                      )}
+                      {" · "}{stepConv}% from previous
+                      {drop > 0 && <span style={{ color: "#d9847a" }}>{" · "}{drop} dropped</span>}
                     </>
                   )}
                 </div>
@@ -280,10 +346,9 @@ export default function AdminPage() {
         </div>
 
         <p style={{ color: MUT, fontSize: 11.5, marginTop: 20, lineHeight: 1.6 }}>
-          Counts are unique visitors per step over the selected window. This is
-          your own first-party data; it complements (doesn&apos;t replace)
-          Clarity and Vercel Analytics. Data appears as visitors move through the
-          app — newly deployed events take time to accumulate.
+          Unique visitors per step over the selected window — your own first-party
+          data, complementing Clarity and Vercel. Newly deployed events take time
+          to accumulate.
         </p>
       </div>
     </div>
