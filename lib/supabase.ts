@@ -199,17 +199,18 @@ export async function saveLead(lead: {
   const email = lead.email.trim().toLowerCase();
   if (!email) return;
   try {
-    await sb
-      .from("leads")
-      .upsert(
-        {
-          email,
-          name: lead.name?.trim() || null,
-          language: lead.language || "en",
-          source: lead.source || "perdido",
-        },
-        { onConflict: "email", ignoreDuplicates: true }
-      );
+    // Plain insert (not upsert) so only the INSERT policy is needed — no
+    // anonymous UPDATE permission required. Duplicate emails will conflict on
+    // the primary key; we ignore that error since the lead is already captured.
+    const { error } = await sb.from("leads").insert({
+      email,
+      name: lead.name?.trim() || null,
+      language: lead.language || "en",
+      source: lead.source || "perdido",
+    });
+    // Swallow duplicate-key conflicts (23505) and anything else — lead capture
+    // must never block play.
+    void error;
   } catch {
     /* never block play on lead capture */
   }
