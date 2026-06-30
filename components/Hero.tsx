@@ -19,10 +19,38 @@ export default function Hero({
   return (
     <div className="lw-view" style={{ justifyContent: "center" }}>
       <div className="lw-kicker">{t(lang, "presents")}</div>
-      <h1 className="lw-title" style={{ fontSize: 40, letterSpacing: "0.04em" }}>
+      <h1
+        className="lw-title"
+        style={{ fontSize: 40, letterSpacing: "0.04em", cursor: "pointer" }}
+        role="button"
+        tabIndex={0}
+        aria-label="Enter Living Worlds and open the Dimension Dial"
+        onClick={onEnter}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onEnter();
+          }
+        }}
+      >
         {t(lang, "brand")}
       </h1>
-      <p className="lw-sub">{t(lang, "promise")}</p>
+      <p
+        className="lw-sub"
+        style={{ cursor: "pointer" }}
+        role="button"
+        tabIndex={0}
+        aria-label="Enter Living Worlds and open the Dimension Dial"
+        onClick={onEnter}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onEnter();
+          }
+        }}
+      >
+        {t(lang, "promise")}
+      </p>
 
       <button className="lw-cta" onClick={onEnter}>
         {t(lang, "enter")}
