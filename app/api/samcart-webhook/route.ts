@@ -49,6 +49,21 @@ function pick(obj: Record<string, unknown>, paths: string[]): string | undefined
   return undefined;
 }
 
+// Pull a numeric value (order total) from any of several payload shapes.
+function pickNumber(
+  obj: Record<string, unknown>,
+  paths: string[]
+): number | undefined {
+  for (const path of paths) {
+    const v = pick(obj, [path]);
+    if (v != null) {
+      const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
+      if (!Number.isNaN(n)) return n;
+    }
+  }
+  return undefined;
+}
+
 export async function POST(req: NextRequest) {
   // 1) Auth: shared secret in the URL.
   const token = req.nextUrl.searchParams.get("token");
@@ -102,6 +117,31 @@ export async function POST(req: NextRequest) {
     pick(payload, ["type", "event", "event_type", "trigger", "status"]) || ""
   ).toLowerCase();
 
+  // Order id (idempotency) + amount + currency for revenue analytics.
+  const orderId = pick(payload, [
+    "order.id",
+    "order_id",
+    "id",
+    "order.order_id",
+    "invoice_number",
+    "data.order.id",
+    "order.number",
+  ]);
+  const amount = pickNumber(payload, [
+    "order.total",
+    "total",
+    "order_total",
+    "amount",
+    "order.amount",
+    "charge.amount",
+    "data.order.total",
+    "products.0.price",
+    "price",
+    "subtotal",
+  ]);
+  const currency =
+    pick(payload, ["currency", "order.currency", "data.currency"]) || "USD";
+
   if (!email) {
     return NextResponse.json({ ok: true, note: "no email in payload" });
   }
@@ -136,6 +176,24 @@ export async function POST(req: NextRequest) {
         .from("profiles")
         .update({ pass_tier: "guest", current_period_end: past })
         .eq("email", email);
+      // Revenue: record the refund (negative amount), idempotent per order.
+      try {
+        await admin.from("purchases").upsert(
+          {
+            samcart_order_id: orderId || null,
+            email,
+            pass_tier: "festival",
+            days: null,
+            amount: amount != null ? -Math.abs(amount) : 0,
+            currency,
+            kind: "refund",
+            raw: payload,
+          },
+          { onConflict: "samcart_order_id,kind", ignoreDuplicates: true }
+        );
+      } catch {
+        /* never fail the webhook on analytics write */
+      }
       return NextResponse.json({ ok: true, action: "revoked", email });
     }
 
@@ -158,6 +216,25 @@ export async function POST(req: NextRequest) {
       .from("profiles")
       .update({ pass_tier: "festival", current_period_end: expires })
       .eq("email", email);
+
+    // Revenue: record the sale, idempotent per order id.
+    try {
+      await admin.from("purchases").upsert(
+        {
+          samcart_order_id: orderId || null,
+          email,
+          pass_tier: "festival",
+          days,
+          amount: amount ?? 0,
+          currency,
+          kind: "purchase",
+          raw: payload,
+        },
+        { onConflict: "samcart_order_id,kind", ignoreDuplicates: true }
+      );
+    } catch {
+      /* never fail the webhook on analytics write */
+    }
 
     return NextResponse.json({ ok: true, action: "granted", email, days });
   } catch (e) {

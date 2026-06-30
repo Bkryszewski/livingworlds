@@ -19,6 +19,13 @@ interface FunnelRow {
   events: number;
   visitors: number;
 }
+interface Rev {
+  gross_revenue: number | string;
+  net_revenue: number | string;
+  purchases: number;
+  refunds: number;
+  paying_customers: number;
+}
 
 const FUNNEL: { event: string; label: string }[] = [
   { event: "landing_viewed", label: "Landing viewed" },
@@ -62,6 +69,7 @@ export default function AdminPage() {
   const [days, setDays] = useState(30);
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [funnel, setFunnel] = useState<FunnelRow[]>([]);
+  const [rev, setRev] = useState<Rev | null>(null);
   const [loading, setLoading] = useState(false);
 
   // login form
@@ -100,12 +108,14 @@ export default function AdminPage() {
     const sb = supabase();
     if (!sb) return;
     setLoading(true);
-    const [{ data: k }, { data: f }] = await Promise.all([
+    const [{ data: k }, { data: f }, { data: r }] = await Promise.all([
       sb.rpc("admin_kpis", { days }),
       sb.rpc("admin_funnel", { days }),
+      sb.rpc("admin_revenue", { days }),
     ]);
     setKpis((k && k[0]) || null);
     setFunnel((f as FunnelRow[]) || []);
+    setRev((r && (r as Rev[])[0]) || null);
     setLoading(false);
   }, [days]);
 
@@ -312,6 +322,47 @@ export default function AdminPage() {
           {kpiCard("Sessions", kpis?.sessions)}
           {kpiCard("Returning", kpis?.returning_visitors)}
           {kpiCard("Total events", kpis?.total_events)}
+        </div>
+
+        <h2 style={{ fontSize: 16, margin: "0 0 12px" }}>Revenue</h2>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 26 }}>
+          {(() => {
+            const net = Number(rev?.net_revenue ?? 0);
+            const gross = Number(rev?.gross_revenue ?? 0);
+            const fmt = (n: number) =>
+              "$" + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const visitors = kpis?.visitors ?? 0;
+            const purchases = rev?.purchases ?? 0;
+            const conv = visitors ? ((purchases / visitors) * 100).toFixed(1) + "%" : "—";
+            const card = (label: string, value: string) => (
+              <div
+                key={label}
+                style={{
+                  flex: 1,
+                  minWidth: 130,
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 14,
+                  background: "rgba(255,255,255,.03)",
+                  padding: "14px 16px",
+                }}
+              >
+                <div style={{ fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", color: MUT }}>
+                  {label}
+                </div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: GOLD, marginTop: 4 }}>
+                  {value}
+                </div>
+              </div>
+            );
+            return (
+              <>
+                {card("Net revenue", fmt(net))}
+                {card("Purchases", String(purchases))}
+                {card("Conversion", conv)}
+                {card("Refunds", String(rev?.refunds ?? 0))}
+              </>
+            );
+          })()}
         </div>
 
         <h2 style={{ fontSize: 16, margin: "0 0 12px" }}>Participation funnel</h2>
