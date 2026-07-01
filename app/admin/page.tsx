@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import JourneyFlow from "@/components/JourneyFlow";
+import JourneyFlowArms from "@/components/JourneyFlowArms";
 
 // Phase 1 admin analytics — internal funnel + KPIs from analytics_events.
 // Self-contained email+password sign-in (no magic link). Only profiles with
@@ -454,6 +455,7 @@ export default function AdminPage() {
         </div>
 
         <JourneyFlow windowDays={days} />
+        <JourneyFlowArms windowDays={days} />
 
         <p style={{ color: MUT, fontSize: 11.5, marginTop: 20, lineHeight: 1.6 }}>
           Unique visitors per step over the selected window — your own first-party
