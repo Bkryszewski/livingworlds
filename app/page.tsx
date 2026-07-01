@@ -7,6 +7,7 @@ import { t, detectInitialLang, saveLang } from "@/lib/i18n";
 import { toEmbedUrl, isVideoFile } from "@/lib/trailer";
 
 import LanguageToggle from "@/components/LanguageToggle";
+import OpeningExperience from '@/components/OpeningExperience';
 import Hero from "@/components/Hero";
 import WorldSelector from "@/components/WorldSelector";
 import RoleSelector from "@/components/RoleSelector";
@@ -65,6 +66,7 @@ function postHeight() {
 
 export default function Page() {
   const [stage, setStage] = useState<Stage>("boot");
+  const [introDone, setIntroDone] = useState(false);
   const [lang, setLang] = useState<Lang>("en");
   const [clock, setClock] = useState("");
 
@@ -270,7 +272,7 @@ export default function Page() {
   // boot sequence → hero
   const [bootIdx, setBootIdx] = useState(0);
   useEffect(() => {
-    if (stage !== "boot") return;
+    if (stage !== "boot" || !introDone) return;
     let i = 0;
     const id = setInterval(() => {
       i++;
@@ -281,7 +283,7 @@ export default function Page() {
       }
     }, 700);
     return () => clearInterval(id);
-  }, [stage]);
+  }, [stage, introDone]);
 
   // height messaging for SamCart embed, after each view change
   useEffect(() => {
@@ -399,6 +401,18 @@ export default function Page() {
     setAssistance("Balanced");
     setCut("");
     setStage("selector");
+  }
+
+  if (!introDone) {
+    return (
+      <OpeningExperience
+        lang={lang}
+        onEnter={() => {
+          setIntroDone(true);
+          setStage("selector"); // skip the loader → drop into the Dimension Dial
+        }}
+      />
+    );
   }
 
   return (
