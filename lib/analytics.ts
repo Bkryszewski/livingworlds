@@ -236,6 +236,82 @@ export function identify(userId: string | null): void {
   currentUserId = userId;
 }
 
+// --- Entry-source routing ----------------------------------------------------
+// Decides whether a visitor arrived from marketing (show the cold open) or
+// direct/organic (go straight to the app). Reliability order: UTM (if present)
+// → in-app-browser user-agent (TikTok/IG/FB webviews name themselves, which is
+// what rescues a bare marketing URL that carries no referrer) → referrer host.
+
+export interface EntrySource {
+  source: string | null; // utm_source, or the referrer host / in-app app name
+  medium: string | null;
+  campaign: string | null;
+  referrerHost: string | null;
+  isCampaign: boolean; // true → show the cold open
+}
+
+const CAMPAIGN_SOURCES = [
+  "tiktok", "instagram", "ig", "facebook", "fb", "meta", "social", "paid",
+  "linkedin", "youtube", "yt", "twitter", "x", "reddit", "snapchat",
+];
+const SOCIAL_HOSTS = [
+  "tiktok.com", "instagram.com", "facebook.com", "fb.com", "l.facebook.com",
+  "lm.facebook.com", "lnkd.in", "linkedin.com", "t.co", "twitter.com", "x.com",
+  "youtube.com", "youtu.be", "reddit.com", "snapchat.com",
+];
+// In-app browser user-agents. These identify the host app even when the
+// referrer is stripped (the common case for a "Learn More" tap on mobile).
+const IN_APP_UA =
+  /musical_ly|bytedance|tiktok|trill|bytelo|instagram|fban|fbav|fb_iab|fbios|line\/|snapchat|pinterest/i;
+
+function inAppApp(ua: string): string | null {
+  if (/musical_ly|bytedance|tiktok|trill|bytelo/i.test(ua)) return "tiktok";
+  if (/instagram/i.test(ua)) return "instagram";
+  if (/fban|fbav|fb_iab|fbios/i.test(ua)) return "facebook";
+  if (/snapchat/i.test(ua)) return "snapchat";
+  if (/pinterest/i.test(ua)) return "pinterest";
+  return null;
+}
+
+/** Read the visitor's entry signal. Safe on server (returns non-campaign). */
+export function getEntrySource(): EntrySource {
+  const empty: EntrySource = {
+    source: null, medium: null, campaign: null, referrerHost: null,
+    isCampaign: false,
+  };
+  if (typeof window === "undefined") return empty;
+
+  const c = ensureContext();
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
+  const referrer =
+    c?.referrer ?? (typeof document !== "undefined" ? document.referrer : null);
+
+  let referrerHost: string | null = null;
+  try {
+    if (referrer) referrerHost = new URL(referrer).hostname.replace(/^www\./, "");
+  } catch {
+    /* ignore */
+  }
+
+  const utmSource = c?.utm_source ?? null;
+  const bySource =
+    !!utmSource &&
+    CAMPAIGN_SOURCES.some((s) => utmSource.toLowerCase().includes(s));
+  const byRef =
+    !!referrerHost &&
+    SOCIAL_HOSTS.some((h) => referrerHost === h || referrerHost.endsWith("." + h));
+  const appName = inAppApp(ua);
+  const byInApp = IN_APP_UA.test(ua);
+
+  return {
+    source: utmSource ?? appName ?? referrerHost,
+    medium: c?.utm_medium ?? null,
+    campaign: c?.utm_campaign ?? null,
+    referrerHost,
+    isCampaign: bySource || byRef || byInApp,
+  };
+}
+
 /** Durable warehouse provider: persists every event to Supabase. */
 const supabaseProvider: AnalyticsProvider = {
   name: "supabase",
@@ -418,6 +494,14 @@ export function initSession(): void {
 // it never calls providers or raw Clarity directly.
 
 export const analytics = {
+  // -- Entry routing --------------------------------------------------------
+  entryRouted: (
+    entry: string,
+    source: string | null,
+    referrerHost: string | null
+  ) =>
+    trackLivingWorldsEvent("entry_routed", { entry, source, referrerHost }),
+
   // -- OpeningExperience (TikTok cold-open → app) --------------------------
   openingStarted: () => {
     mark("t_opening");

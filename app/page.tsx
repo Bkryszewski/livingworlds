@@ -43,7 +43,7 @@ import {
   type CutRecord,
 } from "@/lib/progress";
 import { computeCoverage } from "@/lib/coverage";
-import analytics, { initSession, identify } from "@/lib/analytics";
+import analytics, { initSession, identify, getEntrySource } from "@/lib/analytics";
 
 const AI_STORE_KEY = "livingworlds:ai";
 const PROFILE_KEY = "livingworlds:profile";
@@ -67,6 +67,11 @@ function postHeight() {
 export default function Page() {
   const [stage, setStage] = useState<Stage>("boot");
   const [introDone, setIntroDone] = useState(false);
+  // Entry routing: undecided until we read the source on mount, then either
+  // 'cold' (marketing → cold open) or 'direct' (typed/organic → Hero).
+  const [entry, setEntry] = useState<"undecided" | "cold" | "direct">(
+    "undecided"
+  );
   const [lang, setLang] = useState<Lang>("en");
   const [clock, setClock] = useState("");
 
@@ -152,6 +157,19 @@ export default function Page() {
     setLang(detectInitialLang());
     // Start participation analytics (returning-player + active-session timers).
     initSession();
+    // Route by where they came from: marketing/social → cold open; direct → Hero.
+    const src = getEntrySource();
+    if (src.isCampaign) {
+      setEntry("cold");
+    } else {
+      setEntry("direct");
+      setIntroDone(true); // skip the cold open → boot → Hero
+    }
+    analytics.entryRouted(
+      src.isCampaign ? "cold_open" : "direct",
+      src.source,
+      src.referrerHost
+    );
     try {
       const raw = window.localStorage.getItem(AI_STORE_KEY);
       if (raw) setAiConfig({ ...DEFAULT_AI_CONFIG, ...JSON.parse(raw) });
@@ -411,7 +429,14 @@ export default function Page() {
     setStage("selector");
   }
 
-  if (!introDone) {
+  // Hold a neutral dark frame for the one tick before we've read the source,
+  // so direct visitors never flash a frame of the cold open.
+  if (entry === "undecided") {
+    return <div style={{ position: "fixed", inset: 0, background: "#04050a" }} />;
+  }
+
+  // Marketing / social traffic → cinematic cold open. Direct/organic skips it.
+  if (entry === "cold" && !introDone) {
     return (
       <OpeningExperience
         lang={lang}
