@@ -17,6 +17,7 @@
    ============================================================================ */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import analytics from '@/lib/analytics';
 
 type Lang = 'es' | 'en';
 type Stage = 'wave' | 'incoming' | 'call' | 'lost' | 'fade' | 'enter';
@@ -147,7 +148,8 @@ export default function OpeningExperience({
 
   // STAGE 0 → wave 2s → incoming
   useEffect(() => {
-    after(1200, () => setStage('incoming'));
+    analytics.openingStarted();
+    after(1200, () => { analytics.splashCompleted(); setStage('incoming'); });
     return clearTimers;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -155,6 +157,7 @@ export default function OpeningExperience({
   // STAGE 1 → ring + auto-accept fallback
   useEffect(() => {
     if (stage !== 'incoming') return;
+    analytics.facetimePresented();
     startRing();
     // iOS blocks audio until a gesture — first touch anywhere kicks the ring in
     const unlock = () => { ringCtxRef.current?.resume?.().catch(() => {}); };
@@ -166,6 +169,7 @@ export default function OpeningExperience({
 
   const accept = useCallback(() => {
     stopRing();
+    analytics.facetimeAccepted();
     setStage('call');
     if (audioSrc && audioRef.current) {
       audioRef.current.currentTime = 0;
@@ -176,6 +180,7 @@ export default function OpeningExperience({
 
   const decline = useCallback(() => {
     stopRing();
+    analytics.facetimeDeclined();
     onDecline?.();
     setStage('lost');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -201,7 +206,12 @@ export default function OpeningExperience({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
-  const enterApp = () => { stopRing(); audioRef.current?.pause(); onEnter(); };
+  // ENTER LIVING WORLDS landing page shown
+  useEffect(() => {
+    if (stage === 'enter') analytics.landingLoaded();
+  }, [stage]);
+
+  const enterApp = () => { stopRing(); analytics.enterClicked(); audioRef.current?.pause(); onEnter(); };
   const skip = () => { stopRing(); clearTimers(); setStage('enter'); };
 
   const posterStyle = hasPoster

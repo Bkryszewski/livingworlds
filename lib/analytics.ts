@@ -7,21 +7,44 @@
 // in-app events and active-session milestones.
 //
 // Design:
-//  - Provider-agnostic. Today it emits to Microsoft Clarity. Add GA4, PostHog,
-//    Mixpanel, App Insights, etc. by pushing a provider into PROVIDERS — no
-//    application code changes.
+//  - Provider-agnostic. Emits to Microsoft Clarity, Vercel Analytics, a durable
+//    Supabase warehouse, and (in dev) the console. Add GA4, PostHog, Mixpanel,
+//    App Insights, etc. by pushing a provider into PROVIDERS — no application
+//    code changes.
 //  - Never throws. Analytics must never break the app or block the UI.
 //  - No-ops safely during SSR/dev or when a provider isn't loaded.
 //  - Adding a new event is one line on the `analytics` service.
+//  - Between-step timing marks (mark/since) let us measure funnel durations
+//    without any component holding a timer.
 // -----------------------------------------------------------------------------
 
 export type Metadata = Record<string, unknown>;
 
 import { supabase } from "@/lib/supabase";
+import { track as vercelTrack } from "@vercel/analytics";
 
 export interface AnalyticsProvider {
   name: string;
   track: (eventName: string, metadata?: Metadata) => void;
+}
+
+const isDev =
+  typeof process !== "undefined" && process.env.NODE_ENV !== "production";
+
+// --- Between-step timing marks ----------------------------------------------
+// A tiny shared clock. Methods call mark("t_x") to stamp a moment and
+// since("t_x") to read elapsed ms. Undefined until the mark exists, so events
+// that fire out of order simply omit the duration instead of lying.
+
+const marks: Record<string, number> = {};
+const nowMs = () =>
+  typeof performance !== "undefined" ? performance.now() : Date.now();
+
+function mark(name: string): void {
+  marks[name] = nowMs();
+}
+function since(name: string): number | undefined {
+  return marks[name] == null ? undefined : Math.round(nowMs() - marks[name]);
 }
 
 // --- Providers ---------------------------------------------------------------
@@ -50,7 +73,43 @@ const clarityProvider: AnalyticsProvider = {
   },
 };
 
-const PROVIDERS: AnalyticsProvider[] = [clarityProvider];
+/** Vercel Analytics custom-event provider (typed primitive props only). */
+const vercelProvider: AnalyticsProvider = {
+  name: "vercel",
+  track(eventName, metadata) {
+    try {
+      const flat: Record<string, string | number | boolean | null> = {};
+      if (metadata) {
+        for (const [k, v] of Object.entries(metadata)) {
+          if (v === undefined || v === null) continue;
+          flat[k] =
+            typeof v === "object"
+              ? JSON.stringify(v)
+              : (v as string | number | boolean);
+        }
+      }
+      vercelTrack(eventName, flat);
+    } catch {
+      /* ignore */
+    }
+  },
+};
+
+/** Development-only console provider. Silent in production builds. */
+const consoleProvider: AnalyticsProvider = {
+  name: "console",
+  track(eventName, metadata) {
+    if (!isDev) return;
+    // eslint-disable-next-line no-console
+    console.debug("%c[analytics]", "color:#27B6AC", eventName, metadata || {});
+  },
+};
+
+const PROVIDERS: AnalyticsProvider[] = [
+  clarityProvider,
+  vercelProvider,
+  consoleProvider,
+];
 
 // --- Session context (for the durable Supabase warehouse) --------------------
 // Captured once per session: anonymous visitor id, session id, attribution,
@@ -332,6 +391,9 @@ export function initSession(): void {
 
   // Capture session context up front (visitor id, attribution, environment).
   ensureContext();
+  // Journey-start baseline for "time before story starts" (openingStarted also
+  // sets this; kept here so the metric works even if the intro is skipped).
+  mark("t_opening");
 
   // Returning player: a prior-visit flag in localStorage.
   try {
@@ -356,7 +418,28 @@ export function initSession(): void {
 // it never calls providers or raw Clarity directly.
 
 export const analytics = {
-  // -- Landing --------------------------------------------------------------
+  // -- OpeningExperience (TikTok cold-open → app) --------------------------
+  openingStarted: () => {
+    mark("t_opening");
+    trackLivingWorldsEvent("opening_experience_started");
+  },
+  splashCompleted: () =>
+    trackLivingWorldsEvent("opening_splash_completed", {
+      ms_splash: since("t_opening"),
+    }),
+  facetimePresented: () => trackLivingWorldsEvent("facetime_presented"),
+  facetimeAccepted: () => trackLivingWorldsEvent("facetime_accepted"),
+  facetimeDeclined: () => trackLivingWorldsEvent("facetime_declined"),
+  landingLoaded: () => {
+    mark("t_landing");
+    trackLivingWorldsEvent("landing_page_loaded");
+  },
+  enterClicked: () =>
+    trackLivingWorldsEvent("enter_living_worlds_clicked", {
+      ms_on_landing: since("t_landing"),
+    }),
+
+  // -- Landing (app hero) ---------------------------------------------------
   landingViewed: () => trackLivingWorldsEvent("landing_viewed"),
   landingCtaClicked: () => trackLivingWorldsEvent("landing_cta_clicked"),
   landingTitleClicked: () => trackLivingWorldsEvent("landing_title_clicked"),
@@ -366,36 +449,90 @@ export const analytics = {
 
   // -- Dimension Dial -------------------------------------------------------
   dimensionDialOpened: () => trackLivingWorldsEvent("dimension_dial_opened"),
+  /** Spec funnel event: marks dial-time baseline + fires dimension_dial_loaded. */
+  dimensionDialLoaded: () => {
+    mark("t_dial");
+    trackLivingWorldsEvent("dimension_dial_loaded");
+  },
   dimensionScrolled: () => trackOnce("dimension_scrolled"),
   dimensionWorldPreviewed: (worldId: string) =>
     trackLivingWorldsEvent("dimension_world_previewed", { worldId }),
+  /** Card impression, once per world per session. */
+  cardVisible: (worldId: string, worldTitle: string) => {
+    if (claimOnce("card_visible:" + worldId)) {
+      trackLivingWorldsEvent("dimension_card_visible", { worldId, worldTitle });
+    }
+  },
+  /** Any card tap (locked or not), with access context + time on the dial. */
+  cardClicked: (w: {
+    worldId: string;
+    worldTitle: string;
+    locked: boolean;
+    guestAccessible: boolean;
+  }) =>
+    trackLivingWorldsEvent("dimension_card_clicked", {
+      worldId: w.worldId,
+      worldTitle: w.worldTitle,
+      locked: w.locked,
+      guestAccessible: w.guestAccessible,
+      ms_on_dial: since("t_dial"),
+    }),
   dimensionWorldSelected: (worldId: string) =>
     trackLivingWorldsEvent("dimension_world_selected", { worldId }),
 
   // -- World selection ------------------------------------------------------
   /** Fire for any world chosen; also emits the per-world event when known. */
   worldSelected: (worldId: string) => {
-    trackLivingWorldsEvent("dimension_world_selected", { worldId });
-    if (worldId === "perdido") trackLivingWorldsEvent("perdido_selected");
+    trackLivingWorldsEvent("dimension_world_selected", {
+      worldId,
+      ms_on_dial: since("t_dial"),
+    });
+    if (worldId === "perdido")
+      trackLivingWorldsEvent("perdido_selected", {
+        source: "dimension_dial",
+        ms_on_dial: since("t_dial"),
+      });
     else if (worldId === "manifest")
-      trackLivingWorldsEvent("manifest_selected");
+      trackLivingWorldsEvent("manifest_selected", {
+        source: "dimension_dial",
+        ms_on_dial: since("t_dial"),
+      });
   },
-  perdidoSelected: () => trackLivingWorldsEvent("perdido_selected"),
+  perdidoSelected: (source: string = "dimension_dial") =>
+    trackLivingWorldsEvent("perdido_selected", {
+      source,
+      ms_on_dial: since("t_dial"),
+    }),
   manifestSelected: () => trackLivingWorldsEvent("manifest_selected"),
   worldLockedSelected: (worldId: string) =>
     trackLivingWorldsEvent("world_locked_selected", { worldId }),
 
+  // -- World / Perdido details ---------------------------------------------
+  perdidoDetailsLoaded: () => {
+    mark("t_details");
+    trackLivingWorldsEvent("perdido_details_loaded");
+  },
+  worldDetailsLoaded: (worldId: string) => {
+    mark("t_details");
+    trackLivingWorldsEvent("world_details_loaded", { worldId });
+  },
+
   // -- Player onboarding ----------------------------------------------------
   playerNameEntered: () => trackOnce("player_name_entered"),
+  /** Spec funnel event (kept distinct from your legacy email_entered). */
+  playerEmailEntered: () => trackOnce("player_email_entered"),
   emailEntered: () => trackOnce("email_entered"),
+  playerIdentityCompleted: () =>
+    trackLivingWorldsEvent("player_identity_completed", {
+      ms_on_details: since("t_details"),
+    }),
   loginSuccess: () => trackOnce("login_success"),
   roleSelectionViewed: () => trackLivingWorldsEvent("role_selection_viewed"),
   /**
    * Record a role selection. Roles are authored per story, so we never make
    * the role an event name — we fire one consistent `role_selected` event and
-   * carry the specifics as metadata. This rolls every role (across every
-   * world) up under one event you can break down by world, role, or adversary,
-   * with no analytics changes when new worlds/roles are added.
+   * carry the specifics as metadata. Emits both legacy keys (roleId/world) and
+   * spec keys (role/worldId) so old dashboards and the new funnel both work.
    */
   roleSelected: (
     roleId: string,
@@ -403,13 +540,21 @@ export const analytics = {
   ) =>
     trackLivingWorldsEvent("role_selected", {
       roleId,
+      role: roleId,
       world: opts?.world,
+      worldId: opts?.world,
       adversary: !!opts?.adversary,
+      ms_on_details: since("t_details"),
     }),
 
   // -- Story experience -----------------------------------------------------
-  storyStarted: (world: string) =>
-    trackLivingWorldsEvent("story_started", { world }),
+  storyStarted: (world: string, role?: string | null) =>
+    trackLivingWorldsEvent("story_started", {
+      world,
+      worldId: world,
+      role: role ?? undefined,
+      ms_to_story: since("t_opening"),
+    }),
   storyCheckpointReached: (world: string, checkpoint: string | number) =>
     trackLivingWorldsEvent("story_checkpoint_reached", { world, checkpoint }),
   storyCompleted: (world: string) =>

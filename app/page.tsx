@@ -297,10 +297,12 @@ export default function Page() {
   useEffect(() => {
     const prev = prevStageRef.current;
     if (stage === "hero") analytics.landingViewed();
-    else if (stage === "selector") analytics.dimensionDialOpened();
-    else if (stage === "role") analytics.roleSelectionViewed();
+    else if (stage === "selector") {
+      analytics.dimensionDialLoaded();
+      WORLDS.forEach((w) => analytics.cardVisible(w.id, w.title));
+    } else if (stage === "role") analytics.roleSelectionViewed();
     else if (stage === "player" && worldId) {
-      analytics.storyStarted(worldId);
+      analytics.storyStarted(worldId, roleId);
       playingRef.current = worldId;
     } else if (stage === "cut") {
       if (worldId) analytics.storyCompleted(worldId);
@@ -320,6 +322,12 @@ export default function Page() {
 
   function openWorld(id: string) {
     const w = getWorld(id);
+    analytics.cardClicked({
+      worldId: id,
+      worldTitle: w?.title ?? id,
+      locked: !!w?.locked,
+      guestAccessible: canPlayWorld("guest", id),
+    });
     if (w?.locked) {
       analytics.worldLockedSelected(id);
       return;
@@ -807,6 +815,13 @@ function WorldDetail({
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [name, setName] = useState(initial.name || "");
   const [email, setEmail] = useState(initial.email || "");
+
+  // Perdido (or any world) details page loaded — funnel step + timing baseline.
+  useEffect(() => {
+    if (worldId === "perdido") analytics.perdidoDetailsLoaded();
+    else analytics.worldDetailsLoaded(worldId);
+  }, [worldId]);
+
   // Lead capture: ask every guest for an email here (pre-filled if we have it).
   // Signed-in users already gave us their email, so they skip it.
   const needCapture = !signedIn;
@@ -816,9 +831,10 @@ function WorldDetail({
   function go() {
     if (!canContinue) return;
     if (needCapture) {
-      if (email.trim()) analytics.emailEntered();
+      if (email.trim()) analytics.playerEmailEntered();
       if (name.trim()) analytics.playerNameEntered();
     }
+    analytics.playerIdentityCompleted();
     onContinue(
       needCapture
         ? { name: name.trim(), email: email.trim() }
