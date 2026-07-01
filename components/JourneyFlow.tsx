@@ -4,29 +4,14 @@ import { supabase } from "@/lib/supabase";
 
 /* ============================================================================
    JourneyFlow — additive, read-only "how players come in and out" chart.
-   Drops into the admin dashboard as its own card. Fetches from analytics_events,
-   counts DISTINCT visitors per funnel step, and draws a horizontal funnel where
-   each teal bar is who's still in the journey and the amber note is who leaked
-   out since the previous step. Nothing here writes data or touches existing
-   dashboard logic — if the query fails it renders an empty state, never throws.
+   Reads through the admin_journey() RPC (security definer, admin-guarded) —
+   the same pattern as admin_funnel / admin_revenue — so it works past RLS on
+   analytics_events. Nothing here writes data or touches existing dashboard
+   logic; on any failure it renders a muted message, never throws.
 
-   ── VERIFY THESE THREE against your table if numbers come back empty ──
-   Column names below must match your analytics_events schema.
+   Requires the admin_journey SQL function (see admin_journey.sql) to be
+   installed in Supabase. Pass windowDays to match the dashboard's day filter.
 ============================================================================ */
-const EVENT_COL = "event_name"; // column holding the event name string
-const VISITOR_COL = "visitor_id"; // column identifying a unique person
-const TIME_COL = "created_at"; // timestamptz column
-
-// Each step matches ANY of its aliases, so this works whether your rows use the
-// newer funnel names or the older ones (both are counted as the same step).
-const STEPS: { label: string; aliases: string[] }[] = [
-  { label: "Landing viewed", aliases: ["landing_page_loaded", "landing_viewed", "hero_visible"] },
-  { label: "Dimension Dial", aliases: ["dimension_dial_loaded", "dimension_dial_opened", "world_selector_opened"] },
-  { label: "World selected", aliases: ["world_selected", "perdido_selected", "dimension_card_clicked", "world_preview_viewed"] },
-  { label: "Role selected", aliases: ["role_selected"] },
-  { label: "Story started", aliases: ["story_started", "first_ai_response"] },
-  { label: "Story completed", aliases: ["story_completed"] },
-];
 
 const TEAL = "#27B6AC";
 const GOLD = "#C7A24A";
@@ -35,6 +20,7 @@ const INK = "#eef2f6";
 const FAINT = "#8a93a5";
 const LINE = "rgba(255,255,255,.10)";
 
+type RpcRow = { step_index: number; label: string; visitors: number };
 type Row = { label: string; count: number; pct: number; drop: number; dropPct: number };
 
 export default function JourneyFlow({ windowDays = 30 }: { windowDays?: number }) {
@@ -52,38 +38,24 @@ export default function JourneyFlow({ windowDays = 30 }: { windowDays?: number }
         return;
       }
       try {
-        const since = new Date(Date.now() - windowDays * 86400000).toISOString();
-        const allAliases = STEPS.flatMap((s) => s.aliases);
-        const { data, error } = await sb
-          .from("analytics_events")
-          .select(`${EVENT_COL}, ${VISITOR_COL}`)
-          .gte(TIME_COL, since)
-          .in(EVENT_COL, allAliases)
-          .limit(50000);
+        const { data, error } = await sb.rpc("admin_journey", { days: windowDays });
         if (error) throw error;
 
-        // Distinct visitors per step.
-        const counts = STEPS.map((step) => {
-          const set = new Set<string>();
-          for (const r of data ?? []) {
-            const ev = (r as Record<string, unknown>)[EVENT_COL] as string;
-            const vid = (r as Record<string, unknown>)[VISITOR_COL] as string | null;
-            if (vid && step.aliases.includes(ev)) set.add(vid);
-          }
-          return set.size;
-        });
-
+        const raw = ((data as RpcRow[]) || [])
+          .slice()
+          .sort((a, b) => a.step_index - b.step_index);
+        const counts = raw.map((r) => Number(r.visitors) || 0);
         const top = counts[0] || 0;
-        if (!top) {
+        if (!raw.length || !top) {
           if (active) setState("empty");
           return;
         }
-        const built: Row[] = STEPS.map((s, i) => {
+        const built: Row[] = raw.map((r, i) => {
           const count = counts[i];
           const prev = i === 0 ? count : counts[i - 1];
           const drop = Math.max(prev - count, 0);
           return {
-            label: s.label,
+            label: r.label,
             count,
             pct: Math.round((count / top) * 100),
             drop,
@@ -139,7 +111,6 @@ export default function JourneyFlow({ windowDays = 30 }: { windowDays?: number }
     );
   }
 
-  // Layout
   const VB_W = 680;
   const TOP = 8;
   const PITCH = 52;
