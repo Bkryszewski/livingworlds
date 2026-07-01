@@ -15,9 +15,11 @@ interface Kpis {
   sessions: number;
   returning_visitors: number;
 }
+// Alias-tolerant funnel rows come straight from admin_funnel_v2 (step_index,
+// label, distinct visitors). Labels + step definitions live in the SQL now.
 interface FunnelRow {
-  event_name: string;
-  events: number;
+  step_index: number;
+  label: string;
   visitors: number;
 }
 interface Rev {
@@ -27,16 +29,6 @@ interface Rev {
   refunds: number;
   paying_customers: number;
 }
-
-const FUNNEL: { event: string; label: string }[] = [
-  { event: "landing_viewed", label: "Landing viewed" },
-  { event: "dimension_dial_opened", label: "Dimension Dial opened" },
-  { event: "dimension_world_selected", label: "World selected" },
-  { event: "email_entered", label: "Email captured" },
-  { event: "role_selected", label: "Role selected" },
-  { event: "story_started", label: "Story started" },
-  { event: "story_completed", label: "Story completed" },
-];
 
 const GOLD = "#C7A24A";
 const TEAL = "#27B6AC";
@@ -111,11 +103,13 @@ export default function AdminPage() {
     setLoading(true);
     const [{ data: k }, { data: f }, { data: r }] = await Promise.all([
       sb.rpc("admin_kpis", { days }),
-      sb.rpc("admin_funnel", { days }),
+      sb.rpc("admin_funnel_v2", { days }),
       sb.rpc("admin_revenue", { days }),
     ]);
     setKpis((k && k[0]) || null);
-    setFunnel((f as FunnelRow[]) || []);
+    setFunnel(
+      (((f as FunnelRow[]) || []).slice().sort((a, b) => a.step_index - b.step_index))
+    );
     setRev((r && (r as Rev[])[0]) || null);
     setLoading(false);
   }, [days]);
@@ -251,8 +245,7 @@ export default function AdminPage() {
   }
 
   // ---- DASHBOARD ------------------------------------------------------------
-  const byEvent = new Map(funnel.map((r) => [r.event_name, r.visitors]));
-  const counts = FUNNEL.map((s) => byEvent.get(s.event) || 0);
+  const counts = funnel.map((r) => Number(r.visitors) || 0);
   const top = counts[0] || 0;
 
   const kpiCard = (label: string, value: number | undefined) => (
@@ -329,7 +322,6 @@ export default function AdminPage() {
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 26 }}>
           {(() => {
             const net = Number(rev?.net_revenue ?? 0);
-            const gross = Number(rev?.gross_revenue ?? 0);
             const fmt = (n: number) =>
               "$" + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const visitors = kpis?.visitors ?? 0;
@@ -374,7 +366,7 @@ export default function AdminPage() {
             gap: 10,
           }}
         >
-          {FUNNEL.map((s, i) => {
+          {funnel.map((s, i) => {
             const n = counts[i];
             const pctTop = top ? Math.round((n / top) * 100) : 0;
             const prev = i === 0 ? n : counts[i - 1];
@@ -382,7 +374,7 @@ export default function AdminPage() {
             const drop = prev - n;
             return (
               <div
-                key={s.event}
+                key={s.step_index}
                 style={{
                   border: `1px solid ${LINE}`,
                   borderRadius: 12,
@@ -409,7 +401,7 @@ export default function AdminPage() {
                       letterSpacing: ".08em",
                     }}
                   >
-                    STEP {i + 1}
+                    STEP {s.step_index}
                   </span>
                   <span style={{ fontSize: 22, fontWeight: 800, color: TEAL, lineHeight: 1 }}>
                     {n}
@@ -461,7 +453,7 @@ export default function AdminPage() {
           })}
         </div>
 
-        <JourneyFlow />
+        <JourneyFlow windowDays={days} />
 
         <p style={{ color: MUT, fontSize: 11.5, marginTop: 20, lineHeight: 1.6 }}>
           Unique visitors per step over the selected window — your own first-party
