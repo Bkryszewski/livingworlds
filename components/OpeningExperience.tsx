@@ -29,6 +29,7 @@ interface Props {
   posterUrl?: string;           // Ruben still (wet, stormy). '' → stylized fallback
   videoSrc?: string;            // optional looping backdrop clip (mp4/webm)
   audioSrc?: string;            // master timeline audio (voice + ambience mixed)
+  ringtoneSrc?: string;         // optional call ringtone file; omit to use built-in synth ring
   howToUrl?: string;
   autoAcceptMs?: number;        // auto-answer if untouched (default 6000)
 }
@@ -67,6 +68,7 @@ export default function OpeningExperience({
   posterUrl = '',
   videoSrc = '',
   audioSrc = '',
+  ringtoneSrc = '',
   howToUrl,
   autoAcceptMs = 3500,
 }: Props) {
@@ -86,11 +88,51 @@ export default function OpeningExperience({
 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const ringAudioRef = useRef<HTMLAudioElement>(null);
+  const ringCtxRef = useRef<AudioContext | null>(null);
+  const ringTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const after = (ms: number, fn: () => void) => {
     timers.current.push(setTimeout(fn, ms));
   };
   const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current = []; };
+
+  // --- incoming-call ringtone (generic synth ring; no external assets needed) ---
+  const startRing = () => {
+    if (ringtoneSrc) { ringAudioRef.current?.play().catch(() => {}); return; }
+    try {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return;
+      const ctx = ringCtxRef.current ?? new AC();
+      ringCtxRef.current = ctx;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const burst = () => {
+        const c = ringCtxRef.current;
+        if (!c) return;
+        const t0 = c.currentTime;
+        // FaceTime-style warble cadence: two ascending note-pairs, then a pause
+        [880, 1174.7, 880, 1174.7].forEach((f, i) => {
+          const s = t0 + i * 0.19;
+          const o = c.createOscillator();
+          const g = c.createGain();
+          o.type = 'triangle';
+          o.frequency.value = f;
+          o.connect(g); g.connect(c.destination);
+          g.gain.setValueAtTime(0, s);
+          g.gain.linearRampToValueAtTime(0.16, s + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, s + 0.17);
+          o.start(s); o.stop(s + 0.2);
+        });
+      };
+      burst();
+      ringTimerRef.current = setInterval(burst, 2600);
+    } catch { /* audio unavailable */ }
+  };
+  const stopRing = () => {
+    if (ringTimerRef.current) { clearInterval(ringTimerRef.current); ringTimerRef.current = null; }
+    ringCtxRef.current?.suspend?.().catch(() => {});
+    if (ringAudioRef.current) { ringAudioRef.current.pause(); ringAudioRef.current.currentTime = 0; }
+  };
 
   // live clock (sells "this is really my phone")
   useEffect(() => {
@@ -110,52 +152,57 @@ export default function OpeningExperience({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // STAGE 1 → auto-accept fallback
+  // STAGE 1 → ring + auto-accept fallback
   useEffect(() => {
     if (stage !== 'incoming') return;
+    startRing();
+    // iOS blocks audio until a gesture — first touch anywhere kicks the ring in
+    const unlock = () => { ringCtxRef.current?.resume?.().catch(() => {}); };
+    window.addEventListener('pointerdown', unlock, { once: true });
     const id = setTimeout(accept, autoAcceptMs);
-    return () => clearTimeout(id);
+    return () => { clearTimeout(id); window.removeEventListener('pointerdown', unlock); stopRing(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, autoAcceptMs]);
 
   const accept = useCallback(() => {
+    stopRing();
     setStage('call');
     if (audioSrc && audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => {});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioSrc]);
 
   const decline = useCallback(() => {
+    stopRing();
     onDecline?.();
     setStage('lost');
-    after(1400, () => setStage('fade'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onDecline]);
 
-  // STAGE 2..7 — connected beat timeline (matches storyboard timings)
+  // STAGE 2..6 — connected beat timeline, then straight to CALL ENDED
   useEffect(() => {
     if (stage !== 'call') return;
-    setBeat('speak');                         // 0:02–0:05
+    setBeat('speak');
     after(1600, () => setBeat('signal'));
     after(2900, () => setBeat('urgent'));
     after(4800, () => setBeat('final'));
     after(6400, () => setStage('lost'));
-    after(7600, () => setStage('fade'));
     return clearTimers;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
-  // fade → enter
+  // CALL ENDED → drop straight into ENTER (short beat)
   useEffect(() => {
-    if (stage !== 'fade') return;
-    after(1600, () => setStage('enter'));
+    if (stage !== 'lost') return;
+    after(900, () => setStage('enter'));
     return clearTimers;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
-  const enterApp = () => { audioRef.current?.pause(); onEnter(); };
-  const skip = () => { clearTimers(); setStage('enter'); };
+  const enterApp = () => { stopRing(); audioRef.current?.pause(); onEnter(); };
+  const skip = () => { stopRing(); clearTimers(); setStage('enter'); };
 
   const posterStyle = hasPoster
     ? { backgroundImage: `url("${posterUrl}")` }
@@ -213,7 +260,7 @@ export default function OpeningExperience({
             ))}
           </div>
           <div className="lw-controls">
-            <button className="c end" aria-label="End" onClick={() => setStage('fade')}>
+            <button className="c end" aria-label="End" onClick={() => setStage('lost')}>
               <svg viewBox="0 0 24 24" fill="#fff"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.996.996 0 0 1-.29-.7c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.7l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28a11.27 11.27 0 0 0-2.67-1.85.998.998 0 0 1-.56-.9v-3.1A16.11 16.11 0 0 0 12 9z" /></svg>
             </button>
             <button className="c" aria-label="Video">
@@ -290,6 +337,7 @@ export default function OpeningExperience({
       )}
 
       {audioSrc && <audio ref={audioRef} src={audioSrc} preload="auto" playsInline />}
+      {ringtoneSrc && <audio ref={ringAudioRef} src={ringtoneSrc} preload="auto" loop playsInline />}
 
       <style>{styles}</style>
     </div>
