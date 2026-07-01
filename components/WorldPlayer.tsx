@@ -50,6 +50,7 @@ export default function WorldPlayer({
   lang,
   playerName,
   aiConfig,
+  onProgress,
   onComplete,
 }: {
   world: World;
@@ -58,6 +59,7 @@ export default function WorldPlayer({
   lang: Lang;
   playerName: string;
   aiConfig: AIConfig;
+  onProgress?: (exchanges: number) => void;
   onComplete: (
     cut: string,
     stats: { trust: number; clues: number; exchanges: number },
@@ -86,6 +88,12 @@ export default function WorldPlayer({
 
   const [nodeId, setNodeId] = useState<string | null>(null);
   const node = script && nodeId ? script.nodes[nodeId] : null;
+
+  // Report progress up so the app can offer a save on a real mid-story exit.
+  useEffect(() => {
+    onProgress?.(exchanges);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exchanges]);
 
   function uniq(a: string[]) { return Array.from(new Set(a)); }
   function clueTitle(id: string): string {

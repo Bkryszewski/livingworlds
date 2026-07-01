@@ -8,6 +8,7 @@ import { toEmbedUrl, isVideoFile } from "@/lib/trailer";
 
 import LanguageToggle from "@/components/LanguageToggle";
 import OpeningExperience from '@/components/OpeningExperience';
+import SaveEmail from "@/components/SaveEmail";
 import Hero from "@/components/Hero";
 import WorldSelector from "@/components/WorldSelector";
 import RoleSelector from "@/components/RoleSelector";
@@ -104,6 +105,12 @@ export default function Page() {
   const [howToOpen, setHowToOpen] = useState(false);
   const [pendingPass, setPendingPass] = useState<string | null>(null);
   const [authProfile, setAuthProfile] = useState<LWProfile | null>(null);
+
+  // Lead-only save offer: fires on mid-story exit (after real progress) and on
+  // the Your Cut screen. Never blocks — always skippable.
+  const [playerExchanges, setPlayerExchanges] = useState(0);
+  const [emailCaptured, setEmailCaptured] = useState(false);
+  const [saveOffer, setSaveOffer] = useState<null | "exit" | "cut">(null);
 
   function flash(msg: string) {
     setToast(msg);
@@ -364,6 +371,7 @@ export default function Page() {
     analytics.worldSelected(id);
     setWorldId(id);
     setRoleId(null);
+    setPlayerExchanges(0);
     setStage("world");
   }
 
@@ -426,8 +434,14 @@ export default function Page() {
     setRoleId(null);
     setAssistance("Balanced");
     setCut("");
+    setPlayerExchanges(0);
     setStage("selector");
   }
+
+  // Your Cut → offer the same lead-only save (once, unless already captured).
+  useEffect(() => {
+    if (stage === "cut" && !emailCaptured) setSaveOffer("cut");
+  }, [stage, emailCaptured]);
 
   // Hold a neutral dark frame for the one tick before we've read the source,
   // so direct visitors never flash a frame of the cold open.
@@ -477,7 +491,12 @@ export default function Page() {
                   else if (stage === "onboard") setStage("hero");
                   else if (stage === "role") setStage("world");
                   else if (stage === "assistance") setStage("role");
-                  else if (stage === "boxoffice") setStage(passFrom);
+                  else if (stage === "player") {
+                    // Real progress → offer to save; otherwise just leave.
+                    if (playerExchanges >= 2 && !emailCaptured)
+                      setSaveOffer("exit");
+                    else resetToSelector();
+                  } else if (stage === "boxoffice") setStage(passFrom);
                   else if (stage === "dashboard") setStage(dashFrom);
                   else if (stage === "selector" || stage === "cut")
                     setStage("hero");
@@ -645,6 +664,7 @@ export default function Page() {
               lang={lang}
               playerName={playerName}
               aiConfig={aiConfig}
+              onProgress={setPlayerExchanges}
               onComplete={onCutComplete}
             />
           )}
@@ -812,6 +832,35 @@ export default function Page() {
             </div>
           )}
 
+          {saveOffer && (
+            <SaveEmail
+              lang={lang}
+              reason={saveOffer}
+              accent={accent}
+              defaultName={profile.name}
+              defaultEmail={profile.email}
+              onSave={(email, name) => {
+                const reason = saveOffer;
+                saveProfile({ name: name || profile.name, email });
+                void saveLead({
+                  email,
+                  name,
+                  language: lang,
+                  source: worldId || "perdido",
+                });
+                analytics.playerEmailEntered();
+                setEmailCaptured(true);
+                setSaveOffer(null);
+                if (reason === "exit") resetToSelector();
+              }}
+              onSkip={() => {
+                const reason = saveOffer;
+                setSaveOffer(null);
+                if (reason === "exit") resetToSelector();
+              }}
+            />
+          )}
+
           {toast && <div className="lw-toast">{toast}</div>}
 
           <div className="lw-home" />
@@ -839,7 +888,6 @@ function WorldDetail({
   const copy = world.copy[lang];
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [name, setName] = useState(initial.name || "");
-  const [email, setEmail] = useState(initial.email || "");
 
   // Perdido (or any world) details page loaded — funnel step + timing baseline.
   useEffect(() => {
@@ -847,22 +895,16 @@ function WorldDetail({
     else analytics.worldDetailsLoaded(worldId);
   }, [worldId]);
 
-  // Lead capture: ask every guest for an email here (pre-filled if we have it).
-  // Signed-in users already gave us their email, so they skip it.
+  // No email gate before the story. Guests may add an optional name; email is
+  // now captured later (mid-story exit / Your Cut) as a lead, never as a wall.
   const needCapture = !signedIn;
-  const emailOk = /\S+@\S+\.\S+/.test(email.trim());
-  const canContinue = needCapture ? emailOk : true;
 
   function go() {
-    if (!canContinue) return;
-    if (needCapture) {
-      if (email.trim()) analytics.playerEmailEntered();
-      if (name.trim()) analytics.playerNameEntered();
-    }
+    if (needCapture && name.trim()) analytics.playerNameEntered();
     analytics.playerIdentityCompleted();
     onContinue(
       needCapture
-        ? { name: name.trim(), email: email.trim() }
+        ? { name: name.trim(), email: initial.email }
         : { name: initial.name, email: initial.email }
     );
   }
@@ -931,19 +973,6 @@ function WorldDetail({
 
       {needCapture && (
         <div style={{ marginTop: 6 }}>
-          <div className="lw-flabel">
-            {lang === "es"
-              ? "Tu correo para jugar"
-              : "Your email to play"}
-          </div>
-          <input
-            className="lw-onbin"
-            type="email"
-            inputMode="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t(lang, "emailPlaceholder")}
-          />
           <label className="lw-onblabel">
             {t(lang, "yourName")}{" "}
             <span
@@ -962,7 +991,7 @@ function WorldDetail({
             onChange={(e) => setName(e.target.value)}
             placeholder={t(lang, "namePlaceholder")}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && emailOk) go();
+              if (e.key === "Enter") go();
             }}
           />
         </div>
@@ -970,7 +999,6 @@ function WorldDetail({
 
       <button
         className="lw-cta"
-        disabled={!canContinue}
         onClick={go}
         style={{ background: world.accent, margin: "10px 0 24px" }}
       >
